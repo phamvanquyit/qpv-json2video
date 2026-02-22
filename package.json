@@ -1,0 +1,40 @@
+{
+  "name": "qpv-json2video",
+  "version": "1.0.0",
+  "description": "Generate video from JSON config using node-canvas and FFmpeg",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "prepublishOnly": "yarn build"
+  },
+  "keywords": [
+    "json2video",
+    "video",
+    "canvas",
+    "ffmpeg",
+    "render"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.0",
+    "canvas": "^2.11.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.14.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {}
+}
