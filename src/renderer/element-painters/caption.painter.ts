@@ -16,9 +16,39 @@ interface WordTiming {
 }
 
 /**
+ * OPTIMIZATION: Cache parsed SRT results per content string
+ * Tránh parse regex mỗi frame (rất tốn cho video 420 frames)
+ */
+const srtParseCache = new Map<string, SrtEntry[]>();
+
+/**
+ * OPTIMIZATION: Cache word timings per SRT entry (by startMs+endMs key)
+ */
+const wordTimingCache = new Map<string, WordTiming[]>();
+
+/**
+ * OPTIMIZATION: Cache word wrap layout per content
+ * Key: font+words+maxWidth → { lineWordIndices, lineWidths, maxLineWidth, wordWidths }
+ * Tránh gọi measureText cho mọi từ mỗi frame (khi caption text không đổi)
+ */
+interface WordWrapLayout {
+  lineWordIndices: number[][];
+  lineWidths: number[];
+  maxLineWidth: number;
+  wordWidths: number[];
+  spaceWidth: number;
+}
+const wordWrapLayoutCache = new Map<string, WordWrapLayout>();
+
+/**
  * Parse SRT content thành mảng entries
+ * OPTIMIZATION: Cache result per content string
  */
 function parseSrt(content: string): SrtEntry[] {
+  // Check cache
+  const cached = srtParseCache.get(content);
+  if (cached) return cached;
+
   const entries: SrtEntry[] = [];
   const blocks = content.trim().split(/\n\n+/);
 
@@ -43,14 +73,22 @@ function parseSrt(content: string): SrtEntry[] {
     entries.push({ startMs, endMs, text });
   }
 
+  // Cache result
+  srtParseCache.set(content, entries);
   return entries;
 }
 
 /**
  * Phân bổ timing cho từng từ trong 1 SRT entry.
  * Dùng proportional theo character count (từ dài → thời gian nhiều hơn).
+ * OPTIMIZATION: Cache result per entry key
  */
 function distributeWordTimings(entry: SrtEntry): WordTiming[] {
+  // Cache key phải bao gồm text, vì nhiều SRT entries có cùng timing nhưng text khác
+  const cacheKey = `${entry.startMs}-${entry.endMs}-${entry.text}`;
+  const cached = wordTimingCache.get(cacheKey);
+  if (cached) return cached;
+
   const words = entry.text.split(/\s+/).filter(w => w.length > 0);
   if (words.length === 0) return [];
 
@@ -74,6 +112,8 @@ function distributeWordTimings(entry: SrtEntry): WordTiming[] {
     currentMs += wordDuration;
   }
 
+  // Cache result
+  wordTimingCache.set(cacheKey, timings);
   return timings;
 }
 
@@ -99,6 +139,40 @@ function wrapWords(
       lines.push(currentLine);
       currentLine = [i];
       currentWidth = wordWidth;
+    } else {
+      currentLine.push(i);
+      currentWidth += neededWidth;
+    }
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines.length > 0 ? lines : [[]];
+}
+
+/**
+ * OPTIMIZATION: Word-wrap dùng pre-computed word widths
+ * Tránh gọi ctx.measureText() — dùng cho cached layout path
+ */
+function wrapWordsWithWidths(
+  wordWidths: number[],
+  spaceWidth: number,
+  maxWidth: number
+): number[][] {
+  const lines: number[][] = [];
+  let currentLine: number[] = [];
+  let currentWidth = 0;
+
+  for (let i = 0; i < wordWidths.length; i++) {
+    const ww = wordWidths[i];
+    const neededWidth = currentLine.length > 0 ? spaceWidth + ww : ww;
+
+    if (currentWidth + neededWidth > maxWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = [i];
+      currentWidth = ww;
     } else {
       currentLine.push(i);
       currentWidth += neededWidth;
@@ -283,24 +357,42 @@ function paintWordHighlightMode(
   ctx.font = `700 ${opts.fontSize}px "${opts.fontFamily}"`;
   ctx.textBaseline = 'top';
 
-  const spaceWidth = ctx.measureText(' ').width;
+  // OPTIMIZATION: Cache word wrap layout per font+words+maxWidth
+  // Vì text không đổi giữa các frame cùng 1 caption entry
+  const layoutKey = `${opts.fontSize}|${opts.fontFamily}|${words.join(' ')}|${opts.innerMaxWidth}`;
+  let layout = wordWrapLayoutCache.get(layoutKey);
 
-  // Word wrap → lines of word indices
-  const lineWordIndices = wrapWords(ctx, words, opts.innerMaxWidth);
-  const lineHeightPx = opts.fontSize * opts.lineHeight;
+  if (!layout) {
+    const spaceWidth = ctx.measureText(' ').width;
+    const wordWidths = words.map(w => ctx.measureText(w).width);
 
-  // Tính kích thước từng line
-  const lineWidths: number[] = [];
-  for (const lineIndices of lineWordIndices) {
-    let w = 0;
-    for (let j = 0; j < lineIndices.length; j++) {
-      if (j > 0) w += spaceWidth;
-      w += ctx.measureText(words[lineIndices[j]]).width;
+    // Word wrap → lines of word indices (dùng pre-computed widths)
+    const lineWordIndices = wrapWordsWithWidths(wordWidths, spaceWidth, opts.innerMaxWidth);
+
+    // Tính kích thước từng line
+    const lineWidths: number[] = [];
+    for (const lineIndices of lineWordIndices) {
+      let w = 0;
+      for (let j = 0; j < lineIndices.length; j++) {
+        if (j > 0) w += spaceWidth;
+        w += wordWidths[lineIndices[j]];
+      }
+      lineWidths.push(w);
     }
-    lineWidths.push(w);
+
+    layout = {
+      lineWordIndices,
+      lineWidths,
+      maxLineWidth: Math.max(...lineWidths, 0),
+      wordWidths,
+      spaceWidth,
+    };
+    wordWrapLayoutCache.set(layoutKey, layout);
   }
 
-  const maxLineWidth = Math.max(...lineWidths, 0);
+  const { lineWordIndices, lineWidths, maxLineWidth, wordWidths, spaceWidth } = layout;
+  const lineHeightPx = opts.fontSize * opts.lineHeight;
+
   const blockWidth = maxLineWidth + opts.padding * 2;
   const textBlockHeight = lineWordIndices.length === 1 ? opts.fontSize : (lineWordIndices.length - 1) * lineHeightPx + opts.fontSize;
   const blockHeight = textBlockHeight + opts.padding * 2;
@@ -343,7 +435,8 @@ function paintWordHighlightMode(
 
       if (j > 0) cursorX += spaceWidth;
 
-      const wordWidth = ctx.measureText(word).width;
+      // OPTIMIZATION: Dùng pre-computed wordWidth thay vì measureText lại
+      const wordWidth = wordWidths[wordIdx];
 
       if (isActive) {
         drawHighlightedWord(ctx, word, cursorX, lineY, wordWidth, opts);

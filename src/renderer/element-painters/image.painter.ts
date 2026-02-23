@@ -1,10 +1,19 @@
-import { CanvasRenderingContext2D, loadImage as canvasLoadImage } from 'canvas';
+import { CanvasRenderingContext2D, Image, loadImage as canvasLoadImage } from 'canvas';
 import { ImageElement } from '../../types';
 import { AssetLoader } from '../asset-loader';
 import { computePosition } from '../utils';
 
 /**
+ * OPTIMIZATION: Cache decoded Image objects per URL
+ * Tránh decode image từ buffer mỗi frame (rất tốn CPU)
+ * Image object là native C++ object, decode 1 lần dùng mãi
+ */
+const imageCache = new Map<string, Image>();
+
+/**
  * Vẽ image element lên canvas
+ *
+ * OPTIMIZATION: Decode image 1 lần, cache Image object, reuse cho mọi frame
  */
 export async function paintImage(
   ctx: CanvasRenderingContext2D,
@@ -16,8 +25,13 @@ export async function paintImage(
   const { url, width, height, position = 'center', fit = 'cover', offsetX = 0, offsetY = 0, borderRadius = 0, opacity = 1 } = element;
 
   try {
-    const imgBuffer = await assetLoader.loadImage(url);
-    const img = await canvasLoadImage(imgBuffer);
+    // OPTIMIZATION: Check Image cache trước, tránh decode lặp
+    let img = imageCache.get(url);
+    if (!img) {
+      const imgBuffer = await assetLoader.loadImage(url);
+      img = await canvasLoadImage(imgBuffer);
+      imageCache.set(url, img);
+    }
 
     const pos = computePosition(position, canvasWidth, canvasHeight, width, height, offsetX, offsetY);
 
@@ -55,6 +69,13 @@ export async function paintImage(
     ctx.fillText('Image Error', pos.x + width / 2, pos.y + height / 2);
     ctx.restore();
   }
+}
+
+/**
+ * Clear image cache (gọi khi cleanup)
+ */
+export function clearImageCache(): void {
+  imageCache.clear();
 }
 
 /**

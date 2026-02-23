@@ -4,10 +4,21 @@ import * as os from 'os';
 import * as path from 'path';
 import { CanvasRenderer } from './renderer/canvas-renderer';
 import { FFmpegEncoder } from './renderer/ffmpeg-encoder';
+import { detectPlatform, getOptimalEncoder } from './renderer/platform';
 import { RenderOptions, RenderResult, Scene, Track, VideoConfig } from './types';
+
+// Re-export platform utilities for external use
+export { detectPlatform, getOptimalEncoder } from './renderer/platform';
+export type { EncoderConfig, PlatformType } from './renderer/platform';
 
 /**
  * Generate video từ JSON config (multi-track format)
+ *
+ * Tự động detect OS và sử dụng GPU encoder nếu available:
+ * - macOS: h264_videotoolbox (Apple GPU)
+ * - Linux: h264_nvenc (NVIDIA) / h264_vaapi (Intel/AMD)
+ * - Windows: h264_nvenc / h264_qsv
+ * - Fallback: libx264 (CPU)
  *
  * @param videoConfig - Video configuration (JSON)
  * @param options - Render options
@@ -60,6 +71,13 @@ export async function json2video(videoConfig: any, options?: RenderOptions): Pro
 
     // === RENDER PIPELINE ===
 
+    // Log platform & encoder info
+    const platform = detectPlatform();
+    const encoderInfo = getOptimalEncoder();
+    console.log(`[json2video] Platform: ${platform}`);
+    console.log(`[json2video] Encoder: ${encoderInfo.description}`);
+    console.log(`[json2video] GPU Accelerated: ${encoderInfo.isHardwareAccelerated ? '✅ YES' : '❌ NO (CPU)'}`);
+
     // 1. Initialize renderer
     renderer = new CanvasRenderer(config, fps, options?.cacheDir);
 
@@ -67,7 +85,7 @@ export async function json2video(videoConfig: any, options?: RenderOptions): Pro
     onProgress?.(5);
     await renderer.preloadAssets();
 
-    // 3. Setup FFmpeg encoder
+    // 3. Setup FFmpeg encoder (auto-detect GPU)
     const videoOnlyPath = path.join(outputDir, `${nanoId}_video.mp4`);
     const finalOutputPath = path.join(outputDir, `${nanoId}.mp4`);
 

@@ -1,4 +1,4 @@
-import { CanvasRenderingContext2D, loadImage as canvasLoadImage } from 'canvas';
+import { CanvasRenderingContext2D, Image, loadImage as canvasLoadImage } from 'canvas';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -7,12 +7,20 @@ import { computePosition } from '../utils';
 
 /**
  * VideoFrameExtractor - Dùng FFmpeg để extract frames từ video source
+ *
+ * OPTIMIZATION: Cache decoded Image per frame path (LRU-style)
+ * Tránh disk read + PNG decode mỗi frame
  */
 export class VideoFrameExtractor {
   private framesDir: string;
   private extracted = false;
   private fps: number;
   private totalFrames = 0;
+
+  // OPTIMIZATION: Cache decoded Image objects per frame index
+  // Giảm disk I/O + image decode đáng kể
+  private frameImageCache = new Map<number, Image>();
+  private static MAX_CACHE_SIZE = 60; // Tăng lên 60 frame (BMP decode nhanh nên cache thêm)
 
   constructor(
     private readonly videoPath: string,
@@ -23,8 +31,10 @@ export class VideoFrameExtractor {
   }
 
   /**
-   * Extract tất cả frames từ video → PNG files
-   * Dùng FFmpeg để decode, output dưới dạng frame_%06d.png
+   * Extract tất cả frames từ video → BMP files
+   * OPTIMIZATION: Dùng BMP thay vì PNG — không compression
+   * → FFmpeg write nhanh hơn, canvasLoadImage decode nhanh hơn 3-5x
+   * Tradeoff: disk usage lớn hơn nhưng là temp files sẽ cleanup
    */
   extractFrames(): void {
     if (this.extracted) return;
@@ -33,9 +43,10 @@ export class VideoFrameExtractor {
       fs.mkdirSync(this.framesDir, { recursive: true });
     }
 
-    const outputPattern = path.join(this.framesDir, 'frame_%06d.png');
+    // Dùng BMP format — uncompressed, read/write siêu nhanh
+    const outputPattern = path.join(this.framesDir, 'frame_%06d.bmp');
 
-    execSync(`ffmpeg -y -i "${this.videoPath}" -vf "fps=${this.fps}" -q:v 2 "${outputPattern}"`, { stdio: 'pipe', timeout: 300000 });
+    execSync(`ffmpeg -y -i "${this.videoPath}" -vf "fps=${this.fps}" "${outputPattern}"`, { stdio: 'pipe', timeout: 300000 });
 
     // Đếm số frames
     const files = fs.readdirSync(this.framesDir).filter((f) => f.startsWith('frame_'));
@@ -48,8 +59,41 @@ export class VideoFrameExtractor {
    */
   getFramePath(frameIndex: number): string | null {
     const idx = Math.max(1, Math.min(frameIndex, this.totalFrames));
-    const framePath = path.join(this.framesDir, `frame_${String(idx).padStart(6, '0')}.png`);
+    const framePath = path.join(this.framesDir, `frame_${String(idx).padStart(6, '0')}.bmp`);
     return fs.existsSync(framePath) ? framePath : null;
+  }
+
+  /**
+   * OPTIMIZATION: Load frame Image từ cache hoặc disk
+   * Cache decoded Image objects → tránh re-decode PNG mỗi frame
+   */
+  async getFrameImage(frameIndex: number): Promise<Image | null> {
+    const idx = Math.max(1, Math.min(frameIndex, this.totalFrames));
+
+    // Check cache
+    const cached = this.frameImageCache.get(idx);
+    if (cached) return cached;
+
+    // Load from disk
+    const framePath = this.getFramePath(idx);
+    if (!framePath) return null;
+
+    try {
+      const img = await canvasLoadImage(framePath);
+
+      // LRU eviction: nếu cache đầy, xóa entry cũ nhất
+      if (this.frameImageCache.size >= VideoFrameExtractor.MAX_CACHE_SIZE) {
+        const firstKey = this.frameImageCache.keys().next().value;
+        if (firstKey !== undefined) {
+          this.frameImageCache.delete(firstKey);
+        }
+      }
+
+      this.frameImageCache.set(idx, img);
+      return img;
+    } catch {
+      return null;
+    }
   }
 
   getTotalFrames(): number {
@@ -60,6 +104,7 @@ export class VideoFrameExtractor {
    * Cleanup extracted frames
    */
   cleanup(): void {
+    this.frameImageCache.clear();
     if (fs.existsSync(this.framesDir)) {
       fs.rmSync(this.framesDir, { recursive: true, force: true });
     }
@@ -69,6 +114,8 @@ export class VideoFrameExtractor {
 /**
  * Vẽ video element frame lên canvas
  * @param frameIndex - Frame index trong video source (bắt đầu từ 1)
+ *
+ * OPTIMIZATION: Sử dụng cached Image từ VideoFrameExtractor
  */
 export async function paintVideoFrame(
   ctx: CanvasRenderingContext2D,
@@ -92,11 +139,11 @@ export async function paintVideoFrame(
     actualFrameIndex = totalFrames; // Freeze last frame
   }
 
-  const framePath = extractor.getFramePath(actualFrameIndex);
-  if (!framePath) return;
+  // OPTIMIZATION: Dùng cached Image thay vì load từ disk mỗi frame
+  const img = await extractor.getFrameImage(actualFrameIndex);
+  if (!img) return;
 
   try {
-    const img = await canvasLoadImage(framePath);
     const pos = computePosition(position, canvasWidth, canvasHeight, width, height, offsetX, offsetY);
 
     ctx.save();

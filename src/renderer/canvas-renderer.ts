@@ -1,21 +1,37 @@
-import { CanvasRenderingContext2D, createCanvas } from 'canvas';
+import { Canvas, CanvasRenderingContext2D, createCanvas } from 'canvas';
 import { Scene, SceneElement, Track, VideoConfig, VideoElement } from '../types';
 import { AssetLoader } from './asset-loader';
 import { paintCaption } from './element-painters/caption.painter';
-import { paintImage } from './element-painters/image.painter';
+import { clearImageCache, paintImage } from './element-painters/image.painter';
 import { paintText } from './element-painters/text.painter';
 import { paintVideoFrame, VideoFrameExtractor } from './element-painters/video.painter';
 import { loadGoogleFont } from './google-fonts';
 import { computeElementOpacity, isElementVisible } from './utils';
 
 /**
- * CanvasRenderer - Core rendering engine
+ * CanvasRenderer - Core rendering engine (Optimized)
  * Vẽ từng frame video bằng node-canvas dựa trên VideoConfig
  * Hỗ trợ multi-track: composite nhiều video tracks theo zIndex
+ *
+ * Optimizations:
+ * - Reuse canvas + context across frames (tránh tạo mới mỗi frame)
+ * - Parallel asset preloading
+ * - Pre-sort video tracks (tránh sort mỗi frame)
+ * - Cache sorted elements per scene
  */
 export class CanvasRenderer {
   private assetLoader: AssetLoader;
   private videoExtractors = new Map<string, VideoFrameExtractor>();
+
+  // === OPTIMIZATION: Reuse canvas & context ===
+  private canvas: Canvas;
+  private ctx: CanvasRenderingContext2D;
+
+  // === OPTIMIZATION: Pre-sorted video tracks (sort 1 lần, dùng lại mọi frame) ===
+  private sortedVideoTracks: Track[] = [];
+
+  // === OPTIMIZATION: Cache sorted elements per scene ===
+  private sortedElementsCache = new Map<Scene, SceneElement[]>();
 
   constructor(
     private readonly config: VideoConfig,
@@ -23,6 +39,10 @@ export class CanvasRenderer {
     cacheDir?: string
   ) {
     this.assetLoader = new AssetLoader(cacheDir);
+
+    // Tạo canvas 1 lần, reuse cho tất cả frames
+    this.canvas = createCanvas(this.config.width, this.config.height);
+    this.ctx = this.canvas.getContext('2d');
   }
 
   /**
@@ -41,37 +61,68 @@ export class CanvasRenderer {
     return Math.ceil(maxEndTime * this.fps);
   }
 
-
-
   /**
    * Pre-load tất cả assets (images + video frames + audio) trước khi render
-   * Duyệt qua tất cả tracks
+   * OPTIMIZATION: Download assets song song (parallel) thay vì tuần tự
    */
   async preloadAssets(): Promise<void> {
+    const downloadPromises: Promise<void>[] = [];
+    const videoElements: VideoElement[] = [];
+
+    // Collect tất cả assets cần download
     for (const track of this.config.tracks) {
       for (const scene of track.scenes) {
         if (scene.elements) {
           for (const element of scene.elements) {
             switch (element.type) {
               case 'image':
-                await this.assetLoader.downloadAsset(element.url, 'image');
+                // Download images song song
+                downloadPromises.push(
+                  this.assetLoader.downloadAsset(element.url, 'image').then(() => undefined)
+                );
                 break;
               case 'video':
-                await this.prepareVideoExtractor(element);
+                // Collect video elements (cần xử lý tuần tự vì FFmpeg extract)
+                videoElements.push(element);
                 break;
             }
           }
         }
 
-        // Download audio assets
+        // Download audio assets song song
         if (scene.audio?.url) {
-          await this.assetLoader.downloadAsset(scene.audio.url, 'audio');
+          downloadPromises.push(
+            this.assetLoader.downloadAsset(scene.audio.url, 'audio').then(() => undefined)
+          );
         }
       }
     }
 
+    // Download images + audio song song
+    await Promise.all(downloadPromises);
+
+    // Extract video frames (tuần tự vì mỗi cái dùng nhiều CPU)
+    for (const element of videoElements) {
+      await this.prepareVideoExtractor(element);
+    }
+
     // Auto-detect và load Google Fonts từ elements
     await this.preloadGoogleFonts();
+
+    // === PRE-COMPUTE: Sort video tracks 1 lần ===
+    this.sortedVideoTracks = this.config.tracks
+      .filter(t => t.type === 'video')
+      .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
+    // === PRE-COMPUTE: Sort elements per scene ===
+    for (const track of this.config.tracks) {
+      for (const scene of track.scenes) {
+        if (scene.elements && scene.elements.length > 0) {
+          const sorted = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+          this.sortedElementsCache.set(scene, sorted);
+        }
+      }
+    }
   }
 
   /**
@@ -109,13 +160,12 @@ export class CanvasRenderer {
       scanScenes(track.scenes);
     }
 
-    // Download mỗi font
-    for (const name of fontNames) {
-      await loadGoogleFont(name, this.assetLoader['cacheDir']);
-    }
+    // Download fonts song song
+    const fontPromises = Array.from(fontNames).map(name =>
+      loadGoogleFont(name, this.assetLoader['cacheDir'])
+    );
+    await Promise.all(fontPromises);
   }
-
-
 
   /**
    * Chuẩn bị VideoFrameExtractor cho video element
@@ -133,20 +183,30 @@ export class CanvasRenderer {
    * Render 1 frame tại frameIndex (0-indexed)
    * Multi-track: composite tất cả video tracks theo zIndex
    * Returns: Buffer (raw RGBA pixels)
+   *
+   * OPTIMIZATION:
+   * - Reuse canvas (không tạo mới mỗi frame)
+   * - Dùng pre-sorted video tracks + elements
    */
   async renderFrame(frameIndex: number): Promise<Buffer> {
-    const canvas = createCanvas(this.config.width, this.config.height);
-    const ctx = canvas.getContext('2d');
+    const ctx = this.ctx;
 
     // Thời gian hiện tại trên timeline (giây)
     const currentTime = frameIndex / this.fps;
 
-    // Lấy tất cả video tracks, sort theo zIndex tăng dần
-    const videoTracks = this.config.tracks
-      .filter(t => t.type === 'video')
-      .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    // Lazy init: nếu preloadAssets() chưa được gọi, tính sortedVideoTracks
+    if (this.sortedVideoTracks.length === 0) {
+      this.sortedVideoTracks = this.config.tracks
+        .filter(t => t.type === 'video')
+        .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    }
 
-    // Mặc định: black canvas
+    // Dùng pre-sorted video tracks (đã sort 1 lần ở preloadAssets)
+    const videoTracks = this.sortedVideoTracks;
+
+    // Clear canvas — dùng clearRect rồi fill (nhanh hơn fillRect trên canvas lớn)
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, this.config.width, this.config.height);
 
@@ -164,15 +224,11 @@ export class CanvasRenderer {
       if (!scene) continue; // Track đã kết thúc
 
       // Vẽ bgColor cho scene
-      // Track đầu tiên (lowest zIndex): mặc định #000
-      // Overlay tracks: chỉ fill nếu có bgColor (để trong suốt nếu không set)
       if (!hasRenderedAnyTrack) {
-        // First video track → always fill background
         ctx.fillStyle = scene.bgColor || '#000000';
         ctx.fillRect(0, 0, this.config.width, this.config.height);
         hasRenderedAnyTrack = true;
       } else if (scene.bgColor) {
-        // Overlay track → only fill if bgColor explicitly set
         ctx.fillStyle = scene.bgColor;
         ctx.fillRect(0, 0, this.config.width, this.config.height);
       }
@@ -186,9 +242,14 @@ export class CanvasRenderer {
         ctx.globalAlpha = sceneTransitionAlpha;
       }
 
-      if (scene.elements && scene.elements.length > 0) {
-        const sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      // Dùng cached sorted elements, hoặc tính lazy nếu chưa có
+      let sortedElements = this.sortedElementsCache.get(scene);
+      if (!sortedElements && scene.elements && scene.elements.length > 0) {
+        sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+        this.sortedElementsCache.set(scene, sortedElements);
+      }
 
+      if (sortedElements && sortedElements.length > 0) {
         for (const element of sortedElements) {
           if (!isElementVisible(sceneTimeOffset, element.start, element.duration, scene.duration)) {
             continue;
@@ -212,7 +273,7 @@ export class CanvasRenderer {
       ctx.globalAlpha = 1;
     }
 
-    return canvas.toBuffer('raw');
+    return this.canvas.toBuffer('raw');
   }
 
   /**
@@ -307,5 +368,7 @@ export class CanvasRenderer {
       extractor.cleanup();
     }
     this.videoExtractors.clear();
+    this.sortedElementsCache.clear();
+    clearImageCache();
   }
 }

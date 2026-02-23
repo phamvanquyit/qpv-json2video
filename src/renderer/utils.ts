@@ -195,7 +195,12 @@ export function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: 
 
 /**
  * Measure text dimensions (width, height) với word wrap
+ *
+ * OPTIMIZATION: Reuse 1 canvas singleton cho tất cả text measurement
+ * Thay vì tạo createCanvas(1,1) mỗi lần gọi (tốn memory + GC)
  */
+let measureCtx: CanvasRenderingContext2D | null = null;
+
 export function measureTextBlock(
   text: string,
   fontSize: number,
@@ -204,24 +209,29 @@ export function measureTextBlock(
   maxWidth: number,
   lineHeight: number
 ): { width: number; height: number; lines: string[] } {
-  // Tạo canvas ẩn để measure text
-  const measureCanvas = createCanvas(1, 1);
-  const ctx = measureCanvas.getContext('2d');
+  // Lazy-init measurement context (1 lần duy nhất)
+  if (!measureCtx) {
+    const measureCanvas = createCanvas(1, 1);
+    measureCtx = measureCanvas.getContext('2d');
+  }
 
-  ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}"`;
+  measureCtx.font = `${fontWeight} ${fontSize}px "${fontFamily}"`;
 
-  const lines = wrapText(ctx, text, maxWidth);
+  const lines = wrapText(measureCtx, text, maxWidth);
   const lineHeightPx = fontSize * lineHeight;
 
   let maxLineWidth = 0;
   for (const line of lines) {
-    const metrics = ctx.measureText(line);
+    const metrics = measureCtx.measureText(line);
     maxLineWidth = Math.max(maxLineWidth, metrics.width);
   }
 
   return {
     width: Math.ceil(maxLineWidth),
-    height: Math.ceil(lines.length * lineHeightPx),
+    // Dòng cuối chỉ cao fontSize (không cần lineHeight spacing phía dưới)
+    // Trước: lines.length * lineHeightPx → padding bottom lớn hơn top
+    // Sau:  (lines - 1) * lineHeightPx + fontSize → padding đều
+    height: Math.ceil(lines.length === 1 ? fontSize : (lines.length - 1) * lineHeightPx + fontSize),
     lines,
   };
 }

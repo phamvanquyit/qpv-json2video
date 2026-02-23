@@ -1,5 +1,8 @@
 // Main API
-export { json2video, json2videoFile } from './json2video';
+export { json2video, json2videoFile, detectPlatform, getOptimalEncoder } from './json2video';
+
+// Platform types
+export type { EncoderConfig, PlatformType } from './renderer/platform';
 
 // Types
 export type {

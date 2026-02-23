@@ -1,6 +1,6 @@
 import { CanvasRenderingContext2D } from 'canvas';
 import { TextElement } from '../../types';
-import { computePosition, measureTextBlock, normalizeFontWeight, wrapText } from '../utils';
+import { computePosition, measureTextBlock, normalizeFontWeight } from '../utils';
 
 /**
  * Vẽ text element lên canvas
@@ -73,8 +73,10 @@ export function paintText(
 
   // Vẽ text
   ctx.save();
-  ctx.font = `${weight} ${fontSize}px "${fontFamily}"`;
-  ctx.textBaseline = 'top';
+  // ctx.font đã được set ở line 37, không cần set lại
+  // Dùng 'middle' baseline → text luôn centered trong line slot
+  // Tránh vấn đề padding không đều với 'top' baseline
+  ctx.textBaseline = 'middle';
 
   // Apply opacity
   if (opacity < 1) {
@@ -82,11 +84,14 @@ export function paintText(
   }
 
   const lineHeightPx = fontSize * lineHeight;
-  const lines = wrapText(ctx, text, innerMaxWidth);
+  // OPTIMIZATION: Dùng lines từ measureTextBlock (đã wrapText bên trong)
+  // Tránh gọi wrapText lần thứ 2 → tiết kiệm measureText calls
+  const lines = textBlock.lines;
 
   for (let i = 0; i < lines.length; i++) {
     let lineX = pos.x + padding;
-    const lineY = pos.y + padding + i * lineHeightPx;
+    // Vẽ text tại tâm dọc của mỗi line slot
+    const lineY = pos.y + padding + i * lineHeightPx + fontSize / 2;
 
     // Text align — center/right trong block width thực tế
     if (textAlign === 'center') {

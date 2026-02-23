@@ -2,49 +2,69 @@ import { ChildProcess, spawn } from 'child_process';
 import * as fs from 'fs';
 import { AudioConfig, VideoConfig } from '../types';
 import { AssetLoader } from './asset-loader';
+import { EncoderConfig, getOptimalEncoder } from './platform';
 
 /**
  * FFmpegEncoder - Pipe raw frames từ Canvas vào FFmpeg để encode thành MP4
+ * Tự động detect platform → chọn GPU encoder nếu available
  * Sau đó mix audio tracks vào video
  */
 export class FFmpegEncoder {
   private ffmpegProcess: ChildProcess | null = null;
+  private encoderConfig: EncoderConfig;
 
   constructor(
     private readonly config: VideoConfig,
-    private readonly fps: number
-  ) {}
+    private readonly fps: number,
+  ) {
+    this.encoderConfig = getOptimalEncoder();
+  }
+
+  /**
+   * Lấy thông tin encoder đang sử dụng
+   */
+  getEncoderInfo(): EncoderConfig {
+    return this.encoderConfig;
+  }
 
   /**
    * Tạo FFmpeg process nhận raw video frames qua stdin pipe
    * Output: video-only MP4 (chưa có audio)
+   *
+   * Tự động sử dụng GPU encoder nếu available:
+   * - macOS: h264_videotoolbox
+   * - Linux: h264_nvenc (NVIDIA) hoặc h264_vaapi (Intel/AMD)
+   * - Windows: h264_nvenc hoặc h264_qsv
+   * - Fallback: libx264 (CPU)
    */
   startEncoding(outputPath: string): void {
+    const { encoderArgs, pixelFormat: encoderPixFmt } = this.encoderConfig;
+
+    // Input pixel format — node-canvas toBuffer('raw') outputs BGRA
+    // Nếu dùng GPU encoder, ta cần convert pixel format phù hợp
+    const inputPixFmt = 'bgra';
+
     const args = [
       '-y', // Overwrite output
-      // Input: raw video từ stdin
-      '-f',
-      'rawvideo',
-      '-pix_fmt',
-      'bgra', // node-canvas toBuffer('raw') output BGRA
-      '-s',
-      `${this.config.width}x${this.config.height}`,
-      '-r',
-      String(this.fps),
-      '-i',
-      'pipe:0', // stdin
 
-      // Encoding settings
-      '-c:v',
-      'libx264',
-      '-preset',
-      'medium',
-      '-crf',
-      '23',
-      '-pix_fmt',
-      'yuv420p', // Compatibility
-      '-movflags',
-      '+faststart', // Web optimization
+      // Optimize: set thread count for input processing
+      '-threads', '0', // auto-detect
+
+      // Input: raw video từ stdin
+      '-f', 'rawvideo',
+      '-pix_fmt', inputPixFmt,
+      '-s', `${this.config.width}x${this.config.height}`,
+      '-r', String(this.fps),
+      '-i', 'pipe:0', // stdin
+
+      // Encoder settings (auto-detected based on platform)
+      ...encoderArgs,
+
+      // Output pixel format (encoder-specific)
+      '-pix_fmt', encoderPixFmt,
+
+      // Web optimization
+      '-movflags', '+faststart',
 
       // Output
       outputPath,

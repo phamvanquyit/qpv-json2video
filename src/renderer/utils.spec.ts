@@ -335,9 +335,10 @@ describe('measureTextBlock', () => {
     expect(result.lines.length).toBeGreaterThan(1);
   });
 
-  it('should calculate correct height', () => {
+  it('should calculate correct height for single line', () => {
     const result = measureTextBlock('Hi', 24, 'sans-serif', 400, 500, 1.3);
-    expect(result.height).toBe(Math.ceil(24 * 1.3));
+    // Single line: height = fontSize (no lineHeight spacing below)
+    expect(result.height).toBe(24);
   });
 
   it('should respect different font sizes', () => {
