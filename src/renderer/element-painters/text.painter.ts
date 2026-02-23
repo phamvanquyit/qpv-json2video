@@ -1,6 +1,6 @@
-import { CanvasRenderingContext2D } from 'canvas';
+import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
 import { TextElement } from '../../types';
-import { computePosition, measureTextBlock, normalizeFontWeight } from '../utils';
+import { computePosition, buildFontString, measureTextBlock, normalizeFontWeight, roundRectPath } from '../utils';
 
 /**
  * Vẽ text element lên canvas
@@ -34,7 +34,7 @@ export function paintText(
   } = element;
 
   const weight = normalizeFontWeight(fontWeight);
-  ctx.font = `${weight} ${fontSize}px "${fontFamily}"`;
+  ctx.font = buildFontString(weight, fontSize, fontFamily);
 
   // Tính maxWidth thực tế
   let effectiveMaxWidth: number;
@@ -63,7 +63,7 @@ export function paintText(
     ctx.save();
     ctx.fillStyle = bgColor;
     if (borderRadius > 0) {
-      roundRect(ctx, pos.x, pos.y, blockWidth, blockHeight, borderRadius);
+      roundRectPath(ctx, pos.x, pos.y, blockWidth, blockHeight, borderRadius);
       ctx.fill();
     } else {
       ctx.fillRect(pos.x, pos.y, blockWidth, blockHeight);
@@ -119,19 +119,3 @@ export function paintText(
   ctx.restore();
 }
 
-/**
- * Vẽ rounded rectangle
- */
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number): void {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}

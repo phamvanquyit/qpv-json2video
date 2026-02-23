@@ -1,5 +1,23 @@
-import { CanvasRenderingContext2D, createCanvas } from 'canvas';
+import { createCanvas } from '@napi-rs/canvas';
+import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
 import { ComputedPosition, ElementAnimation, PositionType } from '../types';
+
+/**
+ * UNICODE FALLBACK: @napi-rs/canvas (Skia) không tự động fallback font
+ * như node-canvas (Pango). Cần thêm fallback fonts hỗ trợ Vietnamese/Unicode + Emoji.
+ * "Apple Color Emoji" → macOS emoji, "Segoe UI Emoji" → Windows emoji
+ * "Arial Unicode MS" → macOS full Unicode, "Arial" → Windows/Linux, sans-serif → final fallback
+ */
+const FONT_FALLBACK = ', "Arial Unicode MS", "Apple Color Emoji", "Segoe UI Emoji", Arial, sans-serif';
+
+/**
+ * Build CSS font string với automatic Unicode fallback
+ * @example buildFontString(700, 48, 'Orbitron')
+ * → '700 48px "Orbitron", "Arial Unicode MS", Arial, sans-serif'
+ */
+export function buildFontString(weight: number | string, fontSize: number, fontFamily: string): string {
+  return `${weight} ${fontSize}px "${fontFamily}"${FONT_FALLBACK}`;
+}
 
 /**
  * Tính toán vị trí x, y cho element dựa trên position type
@@ -137,24 +155,27 @@ export function isElementVisible(currentTime: number, elementStart = 0, elementD
 }
 
 /**
+ * Font weight name → number mapping (hoisted to module-level to avoid re-creation)
+ */
+const FONT_WEIGHT_MAP: Record<string, number> = {
+  thin: 100,
+  ultralight: 100,
+  extralight: 200,
+  light: 300,
+  regular: 400,
+  normal: 400,
+  medium: 500,
+  semibold: 600,
+  bold: 700,
+  extrabold: 800,
+  black: 900,
+  heavy: 900,
+};
+
+/**
  * Normalize font weight string -> number
  */
 export function normalizeFontWeight(weight: string | number): number {
-  const fontWeightMap: Record<string, number> = {
-    thin: 100,
-    ultralight: 100,
-    extralight: 200,
-    light: 300,
-    regular: 400,
-    normal: 400,
-    medium: 500,
-    semibold: 600,
-    bold: 700,
-    extrabold: 800,
-    black: 900,
-    heavy: 900,
-  };
-
   if (typeof weight === 'number') {
     return Math.min(Math.max(weight, 100), 900);
   }
@@ -163,31 +184,43 @@ export function normalizeFontWeight(weight: string | number): number {
     return Math.min(Math.max(parseInt(weight, 10), 100), 900);
   }
 
-  return fontWeightMap[weight.toLowerCase().trim()] || 400;
+  return FONT_WEIGHT_MAP[weight.toLowerCase().trim()] || 400;
 }
 
 /**
  * Wrap text để fit trong maxWidth (dùng canvas measureText)
+ * Xử lý explicit \n trước, rồi word-wrap từng paragraph
  */
 export function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(' ');
+  // Split theo explicit newlines trước
+  const paragraphs = text.split('\n');
   const lines: string[] = [];
-  let currentLine = '';
 
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const metrics = ctx.measureText(testLine);
-
-    if (metrics.width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
+  for (const paragraph of paragraphs) {
+    // Paragraph rỗng → giữ dòng trống
+    if (!paragraph.trim()) {
+      lines.push('');
+      continue;
     }
-  }
 
-  if (currentLine) {
-    lines.push(currentLine);
+    const words = paragraph.split(' ');
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const metrics = ctx.measureText(testLine);
+
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
   }
 
   return lines.length > 0 ? lines : [''];
@@ -215,7 +248,7 @@ export function measureTextBlock(
     measureCtx = measureCanvas.getContext('2d');
   }
 
-  measureCtx.font = `${fontWeight} ${fontSize}px "${fontFamily}"`;
+  measureCtx.font = buildFontString(fontWeight, fontSize, fontFamily);
 
   const lines = wrapText(measureCtx, text, maxWidth);
   const lineHeightPx = fontSize * lineHeight;
@@ -234,4 +267,60 @@ export function measureTextBlock(
     height: Math.ceil(lines.length === 1 ? fontSize : (lines.length - 1) * lineHeightPx + fontSize),
     lines,
   };
+}
+
+/**
+ * Clear measurement context cache (gọi khi cleanup để tránh memory leak)
+ */
+export function clearMeasureCache(): void {
+  measureCtx = null;
+}
+
+/**
+ * Vẽ rounded rectangle path (shared utility)
+ * Bao gồm beginPath + closePath
+ */
+export function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+/**
+ * Tính source rect cho fit mode (cover/contain/fill) — shared utility
+ */
+export function calculateFitDraw(
+  srcW: number,
+  srcH: number,
+  dstW: number,
+  dstH: number,
+  fit: 'cover' | 'contain' | 'fill'
+): { sx: number; sy: number; sw: number; sh: number } {
+  if (fit === 'fill') {
+    return { sx: 0, sy: 0, sw: srcW, sh: srcH };
+  }
+
+  const srcRatio = srcW / srcH;
+  const dstRatio = dstW / dstH;
+
+  if (fit === 'cover') {
+    if (srcRatio > dstRatio) {
+      const sw = srcH * dstRatio;
+      return { sx: (srcW - sw) / 2, sy: 0, sw, sh: srcH };
+    } else {
+      const sh = srcW / dstRatio;
+      return { sx: 0, sy: (srcH - sh) / 2, sw: srcW, sh };
+    }
+  }
+
+  // Contain: sử dụng toàn bộ source
+  return { sx: 0, sy: 0, sw: srcW, sh: srcH };
 }

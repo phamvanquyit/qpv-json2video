@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { registerFont } from 'canvas';
+import { GlobalFonts } from '@napi-rs/canvas';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -35,10 +35,9 @@ export class AssetLoader {
 
     // Check file đã download trước đó
     if (fs.existsSync(localPath)) {
+      // OPTIMIZATION: Không đọc buffer eager cho images
+      // loadImage() sẽ đọc lazy khi cần, tránh giữ buffer dư thừa trong cache
       const asset: CachedAsset = { url, localPath, type };
-      if (type === 'image') {
-        asset.buffer = fs.readFileSync(localPath);
-      }
       this.cache.set(url, asset);
       return asset;
     }
@@ -65,21 +64,23 @@ export class AssetLoader {
    */
   async loadImage(url: string): Promise<Buffer> {
     const asset = await this.downloadAsset(url, 'image');
-    if (asset.buffer) return asset.buffer;
+    if (asset.buffer) {
+      const buf = asset.buffer;
+      // OPTIMIZATION: Clear buffer sau khi sử dụng — image.painter cache decoded Image riêng
+      // Tránh giữ image buffer dư thừa trong memory
+      asset.buffer = undefined;
+      return buf;
+    }
     return fs.readFileSync(asset.localPath);
   }
 
   /**
-   * Download font và register vơi node-canvas
+   * Download font và register với @napi-rs/canvas GlobalFonts
    */
-  async loadFont(url: string, family: string, weight?: number | string, style?: string): Promise<void> {
+  async loadFont(url: string, family: string, _weight?: number | string, _style?: string): Promise<void> {
     const asset = await this.downloadAsset(url, 'font');
     try {
-      registerFont(asset.localPath, {
-        family,
-        weight: String(weight || 400),
-        style: style || 'normal',
-      });
+      GlobalFonts.registerFromPath(asset.localPath, family);
     } catch {
       // Font may already be registered, ignore
     }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { registerFont } from 'canvas';
+import { GlobalFonts } from '@napi-rs/canvas';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -53,10 +53,8 @@ export async function loadGoogleFont(fontName: string, cacheDir?: string): Promi
       return;
     }
 
-    // Download và register từng font face
-    for (const face of fontFaces) {
-      await downloadAndRegister(face, fontsDir);
-    }
+    // OPTIMIZATION: Download font faces song song (independent files)
+    await Promise.all(fontFaces.map(face => downloadAndRegister(face, fontsDir)));
   } catch (error: any) {
     // Nếu request tất cả weights fail, thử chỉ weight 400 và 700
     try {
@@ -69,9 +67,7 @@ export async function loadGoogleFont(fontName: string, cacheDir?: string): Promi
       const css = response.data as string;
       const fontFaces = parseCss(css, fontName);
 
-      for (const face of fontFaces) {
-        await downloadAndRegister(face, fontsDir);
-      }
+      await Promise.all(fontFaces.map(face => downloadAndRegister(face, fontsDir)));
     } catch {
       console.warn(`[json2video] Không thể load Google Font "${fontName}": ${error.message}`);
     }
@@ -137,13 +133,9 @@ async function downloadAndRegister(face: ParsedFontFace, fontsDir: string): Prom
     }
   }
 
-  // Register với node-canvas
+  // Register với @napi-rs/canvas GlobalFonts
   try {
-    registerFont(localPath, {
-      family: face.family,
-      weight: face.weight,
-      style: face.style,
-    });
+    GlobalFonts.registerFromPath(localPath, face.family);
   } catch {
     // Có thể đã register rồi, ignore
   }

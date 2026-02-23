@@ -39,35 +39,51 @@ export function detectPlatform(): PlatformType {
 }
 
 /**
+ * OPTIMIZATION: Cache FFmpeg encoder list (chỉ fetch 1 lần)
+ */
+let cachedEncodersList: string | null = null;
+
+/**
  * Kiểm tra FFmpeg encoder có available không
+ * OPTIMIZATION: Dùng cached encoder list thay vì gọi ffmpeg mỗi lần
  */
 function isEncoderAvailable(encoderName: string): boolean {
   try {
-    const output = execSync(`ffmpeg -encoders 2>/dev/null`, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 5000,
-    }).toString();
-    return output.includes(encoderName);
+    if (cachedEncodersList === null) {
+      cachedEncodersList = execSync(`ffmpeg -encoders 2>/dev/null`, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 5000,
+      }).toString();
+    }
+    return cachedEncodersList.includes(encoderName);
   } catch {
     return false;
   }
 }
 
 /**
+ * OPTIMIZATION: Cache FFmpeg hwaccel methods (chỉ fetch 1 lần)
+ */
+let cachedHwAccels: string[] | null = null;
+
+/**
  * Kiểm tra FFmpeg hardware acceleration methods
  */
 function getHwAccelMethods(): string[] {
+  if (cachedHwAccels !== null) return cachedHwAccels;
   try {
     const output = execSync(`ffmpeg -hwaccels 2>/dev/null`, {
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 5000,
     }).toString();
-    return output
+    cachedHwAccels = output
       .split('\n')
       .map(line => line.trim())
       .filter(line => line && line !== 'Hardware acceleration methods:');
+    return cachedHwAccels;
   } catch {
-    return [];
+    cachedHwAccels = [];
+    return cachedHwAccels;
   }
 }
 
@@ -203,4 +219,6 @@ export function getOptimalEncoder(): EncoderConfig {
  */
 export function resetEncoderCache(): void {
   cachedConfig = null;
+  cachedEncodersList = null;
+  cachedHwAccels = null;
 }

@@ -1,4 +1,4 @@
-import { createCanvas } from 'canvas';
+import { createCanvas } from '@napi-rs/canvas';
 import { paintText } from './text.painter';
 import { TextElement } from '../../types';
 

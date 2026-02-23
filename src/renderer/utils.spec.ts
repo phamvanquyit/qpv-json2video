@@ -1,5 +1,5 @@
 import { computeElementOpacity, computePosition, isElementVisible, measureTextBlock, normalizeFontWeight, wrapText } from './utils';
-import { createCanvas } from 'canvas';
+import { createCanvas } from '@napi-rs/canvas';
 
 // ============================================================
 // computePosition

@@ -1,4 +1,4 @@
-import { createCanvas } from 'canvas';
+import { createCanvas } from '@napi-rs/canvas';
 import { paintCaption, parseSrt, distributeWordTimings, wrapWords } from './caption.painter';
 import { CaptionElement } from '../../types';
 

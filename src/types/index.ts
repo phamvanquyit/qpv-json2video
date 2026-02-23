@@ -213,6 +213,8 @@ export interface RenderResult {
   message: string;
   buffer: Buffer;
   fileName: string;
+  /** Đường dẫn file output (chỉ có khi dùng json2videoFile) */
+  filePath?: string;
 }
 
 /**

@@ -67,12 +67,12 @@ describe('CanvasRenderer', () => {
   // ========================
 
   describe('renderFrame', () => {
-    it('should return raw BGRA buffer', async () => {
+    it('should return raw RGBA buffer', async () => {
       const renderer = new CanvasRenderer(basicConfig, 10);
       const frameBuffer = await renderer.renderFrame(0);
 
       expect(Buffer.isBuffer(frameBuffer)).toBe(true);
-      expect(frameBuffer.length).toBe(320 * 240 * 4); // BGRA
+      expect(frameBuffer.length).toBe(320 * 240 * 4); // RGBA
       renderer.cleanup();
     });
 
@@ -122,11 +122,11 @@ describe('CanvasRenderer', () => {
       const renderer = new CanvasRenderer(config, 10);
       const frame = await renderer.renderFrame(0);
 
-      // BGRA black = [0,0,0,255] per pixel
-      // canvas toBuffer('raw') = BGRA
-      expect(frame[0]).toBe(0);   // B
+      // RGBA black = [0,0,0,255] per pixel
+      // @napi-rs/canvas data() = RGBA
+      expect(frame[0]).toBe(0);   // R
       expect(frame[1]).toBe(0);   // G
-      expect(frame[2]).toBe(0);   // R
+      expect(frame[2]).toBe(0);   // B
       expect(frame[3]).toBe(255); // A
       renderer.cleanup();
     });
@@ -395,7 +395,7 @@ describe('CanvasRenderer', () => {
       const config = singleTrackConfig(1, 1, [{ duration: 1 }], 1);
       const renderer = new CanvasRenderer(config, 1);
       const frame = await renderer.renderFrame(0);
-      expect(frame.length).toBe(4); // 1x1 BGRA
+      expect(frame.length).toBe(4); // 1x1 RGBA
       renderer.cleanup();
     });
 
@@ -461,7 +461,7 @@ describe('CanvasRenderer', () => {
       const renderer = new CanvasRenderer(config, 10);
       const frame = await renderer.renderFrame(0);
       expect(Buffer.isBuffer(frame)).toBe(true);
-      expect(frame.length).toBe(4 * 4 * 4); // BGRA
+      expect(frame.length).toBe(4 * 4 * 4); // RGBA
       renderer.cleanup();
     });
 
@@ -540,9 +540,9 @@ describe('CanvasRenderer', () => {
       const frame = await renderer.renderFrame(0);
 
       // bg should still be red (from track 0), not overwritten
-      expect(frame[0]).toBe(0);   // B
+      expect(frame[0]).toBe(255); // R
       expect(frame[1]).toBe(0);   // G
-      expect(frame[2]).toBe(255); // R
+      expect(frame[2]).toBe(0);   // B
       expect(frame[3]).toBe(255); // A
       renderer.cleanup();
     });

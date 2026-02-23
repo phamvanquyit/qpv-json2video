@@ -1,7 +1,8 @@
-import { CanvasRenderingContext2D, Image, loadImage as canvasLoadImage } from 'canvas';
+import { Image, loadImage as canvasLoadImage } from '@napi-rs/canvas';
+import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
 import { ImageElement } from '../../types';
 import { AssetLoader } from '../asset-loader';
-import { computePosition } from '../utils';
+import { computePosition, calculateFitDraw, roundRectPath } from '../utils';
 
 /**
  * OPTIMIZATION: Cache decoded Image objects per URL
@@ -39,7 +40,6 @@ export async function paintImage(
 
     // Border radius clip
     if (borderRadius > 0) {
-      ctx.beginPath();
       roundRectPath(ctx, pos.x, pos.y, width, height, borderRadius);
       ctx.clip();
     }
@@ -78,49 +78,3 @@ export function clearImageCache(): void {
   imageCache.clear();
 }
 
-/**
- * Tính source rect cho fit mode (cover/contain/fill)
- */
-function calculateFitDraw(
-  srcW: number,
-  srcH: number,
-  dstW: number,
-  dstH: number,
-  fit: 'cover' | 'contain' | 'fill'
-): { sx: number; sy: number; sw: number; sh: number } {
-  if (fit === 'fill') {
-    return { sx: 0, sy: 0, sw: srcW, sh: srcH };
-  }
-
-  const srcRatio = srcW / srcH;
-  const dstRatio = dstW / dstH;
-
-  if (fit === 'cover') {
-    // Cover: crop source để fill toàn bộ destination
-    if (srcRatio > dstRatio) {
-      // Source rộng hơn → crop width
-      const sw = srcH * dstRatio;
-      return { sx: (srcW - sw) / 2, sy: 0, sw, sh: srcH };
-    } else {
-      // Source cao hơn → crop height
-      const sh = srcW / dstRatio;
-      return { sx: 0, sy: (srcH - sh) / 2, sw: srcW, sh };
-    }
-  }
-
-  // Contain: sử dụng toàn bộ source
-  return { sx: 0, sy: 0, sw: srcW, sh: srcH };
-}
-
-function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}

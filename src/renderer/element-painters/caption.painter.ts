@@ -1,6 +1,6 @@
-import { CanvasRenderingContext2D } from 'canvas';
+import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
 import { CaptionElement, WordHighlightStyle } from '../../types';
-import { computePosition } from '../utils';
+import { computePosition, buildFontString, roundRectPath, wrapText } from '../utils';
 
 interface SrtEntry {
   startMs: number;
@@ -76,6 +76,37 @@ function parseSrt(content: string): SrtEntry[] {
   // Cache result
   srtParseCache.set(content, entries);
   return entries;
+}
+
+/**
+ * Clear tất cả caption caches (gọi khi cleanup để tránh memory leak)
+ */
+export function clearCaptionCaches(): void {
+  srtParseCache.clear();
+  wordTimingCache.clear();
+  wordWrapLayoutCache.clear();
+}
+
+/**
+ * Binary search tìm active SRT entry tại thời điểm timeMs
+ * OPTIMIZATION: O(log n) thay vì O(n) linear scan
+ */
+function findActiveEntry(entries: SrtEntry[], timeMs: number): SrtEntry | undefined {
+  let lo = 0;
+  let hi = entries.length - 1;
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    if (timeMs < entries[mid].startMs) {
+      hi = mid - 1;
+    } else if (timeMs > entries[mid].endMs) {
+      lo = mid + 1;
+    } else {
+      return entries[mid];
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -226,8 +257,8 @@ export function paintCaption(
   const entries = parseSrt(srtContent);
   const currentTimeMs = (currentTime + start) * 1000;
 
-  // Tìm caption đang active
-  const activeEntry = entries.find((e) => currentTimeMs >= e.startMs && currentTimeMs <= e.endMs);
+  // OPTIMIZATION: Binary search O(log n) thay vì linear find O(n)
+  const activeEntry = findActiveEntry(entries, currentTimeMs);
 
   if (!activeEntry) return;
 
@@ -304,10 +335,10 @@ function paintSentenceMode(
   text: string,
   opts: PaintOptions
 ): void {
-  ctx.font = `700 ${opts.fontSize}px "${opts.fontFamily}"`;
+  ctx.font = buildFontString(700, opts.fontSize, opts.fontFamily);
   ctx.textBaseline = 'top';
 
-  const lines = wrapTextSimple(ctx, text, opts.innerMaxWidth);
+  const lines = wrapText(ctx, text, opts.innerMaxWidth);
   const lineHeightPx = opts.fontSize * opts.lineHeight;
 
   let maxLineWidth = 0;
@@ -354,7 +385,7 @@ function paintWordHighlightMode(
 ): void {
   const words = wordTimings.map(w => w.word);
 
-  ctx.font = `700 ${opts.fontSize}px "${opts.fontFamily}"`;
+  ctx.font = buildFontString(700, opts.fontSize, opts.fontFamily);
   ctx.textBaseline = 'top';
 
   // OPTIMIZATION: Cache word wrap layout per font+words+maxWidth
@@ -405,10 +436,22 @@ function paintWordHighlightMode(
   // Background
   drawBackground(ctx, pos.x, pos.y, blockWidth, blockHeight, opts.backgroundColor, opts.borderRadius);
 
-  // Tìm active word index
-  const activeWordIndex = wordTimings.findIndex(
-    w => currentTimeMs >= w.startMs && currentTimeMs < w.endMs
-  );
+  // OPTIMIZATION: Binary search cho active word (wordTimings sorted by startMs)
+  let activeWordIndex = -1;
+  {
+    let lo = 0, hi = wordTimings.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      if (currentTimeMs < wordTimings[mid].startMs) {
+        hi = mid - 1;
+      } else if (currentTimeMs >= wordTimings[mid].endMs) {
+        lo = mid + 1;
+      } else {
+        activeWordIndex = mid;
+        break;
+      }
+    }
+  }
 
   // Vẽ từng line, từng word
   for (let lineIdx = 0; lineIdx < lineWordIndices.length; lineIdx++) {
@@ -467,7 +510,7 @@ function drawHighlightedWord(
     const hPad = 4;
     const vPad = 2;
     ctx.fillStyle = opts.highlightBgColor;
-    roundRect(ctx, x - hPad, y - vPad, wordWidth + hPad * 2, opts.fontSize + vPad * 2, 6);
+    roundRectPath(ctx, x - hPad, y - vPad, wordWidth + hPad * 2, opts.fontSize + vPad * 2, 6);
     ctx.fill();
 
     // Vẽ text bằng highlightColor
@@ -492,31 +535,6 @@ function drawHighlightedWord(
 }
 
 // ==================== SHARED HELPERS ====================
-
-/** Text wrap đơn giản (dùng cho sentence mode) */
-function wrapTextSimple(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
-
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const metrics = ctx.measureText(testLine);
-
-    if (metrics.width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
-    }
-  }
-
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  return lines.length > 0 ? lines : [''];
-}
 
 /** Vẽ text + stroke outline */
 function drawTextWithStroke(
@@ -553,26 +571,11 @@ function drawBackground(
 
   ctx.fillStyle = bgColor;
   if (borderRadius > 0) {
-    roundRect(ctx, x, y, w, h, borderRadius);
+    roundRectPath(ctx, x, y, w, h, borderRadius);
     ctx.fill();
   } else {
     ctx.fillRect(x, y, w, h);
   }
-}
-
-/** Rounded rect path */
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
 }
 
 // Export for testing

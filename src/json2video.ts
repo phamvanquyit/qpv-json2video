@@ -37,6 +37,44 @@ export type { EncoderConfig, PlatformType } from './renderer/platform';
  * ```
  */
 export async function json2video(videoConfig: any, options?: RenderOptions): Promise<RenderResult> {
+  return _renderVideo(videoConfig, options);
+}
+
+/**
+ * Generate video và lưu trực tiếp ra file
+ * OPTIMIZATION: Render trực tiếp ra outputPath, không qua buffer trung gian
+ *
+ * @param videoConfig - Video configuration (JSON)
+ * @param outputPath - Đường dẫn file output (.mp4)
+ * @param options - Render options
+ *
+ * @example
+ * ```ts
+ * await json2videoFile(
+ *   { width: 1080, height: 1920, tracks: [...] },
+ *   './output.mp4'
+ * );
+ * ```
+ */
+export async function json2videoFile(videoConfig: any, outputPath: string, options?: RenderOptions): Promise<RenderResult> {
+  // Ensure output directory exists
+  const dir = path.dirname(outputPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  return _renderVideo(videoConfig, options, outputPath);
+}
+
+/**
+ * Core render pipeline — shared by json2video and json2videoFile
+ *
+ * OPTIMIZATIONS:
+ * - Pipeline rendering: render frame N+1 while FFmpeg encodes frame N
+ * - Direct file output: json2videoFile skips read-to-buffer-then-write
+ * - Pre-computed frame size for progress calculation
+ */
+async function _renderVideo(videoConfig: any, options?: RenderOptions, directOutputPath?: string): Promise<RenderResult> {
   let renderer: CanvasRenderer | null = null;
   const onProgress = options?.onProgress;
   const outputDir = options?.outputDir || path.join(os.tmpdir(), 'json2video-output');
@@ -87,19 +125,27 @@ export async function json2video(videoConfig: any, options?: RenderOptions): Pro
 
     // 3. Setup FFmpeg encoder (auto-detect GPU)
     const videoOnlyPath = path.join(outputDir, `${nanoId}_video.mp4`);
-    const finalOutputPath = path.join(outputDir, `${nanoId}.mp4`);
+    // Nếu có directOutputPath → dùng luôn, không cần temp file rồi copy
+    const finalOutputPath = directOutputPath || path.join(outputDir, `${nanoId}.mp4`);
 
     const encoder = new FFmpegEncoder(config, fps);
     encoder.startEncoding(videoOnlyPath);
 
-    // 4. Render từng frame → pipe vào FFmpeg
+    // 4. PIPELINE RENDER: Render frame N+1 while FFmpeg encodes frame N
+    //    Overlap compute (canvas render) với I/O (FFmpeg stdin write)
     const totalFrames = renderer.getTotalFrames();
-
     let lastLoggedProgress = -1;
+    let pendingWrite: Promise<void> | null = null;
 
     for (let i = 0; i < totalFrames; i++) {
       const frameBuffer = await renderer.renderFrame(i);
-      await encoder.writeFrame(frameBuffer);
+
+      // Đợi write trước đó hoàn thành (nếu có) trước khi write tiếp
+      // Trong lúc đợi, FFmpeg đang encode frame trước → overlap I/O
+      if (pendingWrite) await pendingWrite;
+
+      // Fire-and-forget write (không await ngay) → cho phép render frame tiếp
+      pendingWrite = encoder.writeFrame(frameBuffer);
 
       // Progress: 10% - 80% cho frame rendering
       const renderProgress = 10 + Math.floor((i / totalFrames) * 70);
@@ -109,6 +155,9 @@ export async function json2video(videoConfig: any, options?: RenderOptions): Pro
       }
     }
 
+    // Đợi write cuối cùng
+    if (pendingWrite) await pendingWrite;
+
     // 5. Kết thúc encoding
     await encoder.finishEncoding();
     onProgress?.(85);
@@ -117,16 +166,21 @@ export async function json2video(videoConfig: any, options?: RenderOptions): Pro
     const outputPath = await encoder.mixAudio(videoOnlyPath, finalOutputPath, renderer.getAssetLoader());
     onProgress?.(95);
 
-    // 7. Read file to buffer
-    const buffer = fs.readFileSync(outputPath);
-
-    // Cleanup temp file
-    try {
-      if (fs.existsSync(outputPath)) {
-        fs.unlinkSync(outputPath);
+    // 7. OPTIMIZATION: Chỉ đọc buffer khi cần (json2video)
+    // json2videoFile đã ghi trực tiếp ra disk → không cần đọc lại
+    let buffer: Buffer;
+    if (directOutputPath) {
+      // File đã ở disk → trả buffer rỗng, caller dùng filePath
+      buffer = Buffer.alloc(0);
+    } else {
+      buffer = fs.readFileSync(outputPath);
+      try {
+        if (fs.existsSync(outputPath)) {
+          fs.unlinkSync(outputPath);
+        }
+      } catch {
+        // ignore cleanup errors
       }
-    } catch {
-      // ignore cleanup errors
     }
 
     onProgress?.(100);
@@ -136,6 +190,7 @@ export async function json2video(videoConfig: any, options?: RenderOptions): Pro
       message: 'Video đã được render thành công',
       buffer,
       fileName: `${fileName}.mp4`,
+      ...(directOutputPath ? { filePath: directOutputPath } : {}),
     };
   } catch (error: any) {
     throw new Error(`Lỗi khi render video: ${error.message}`);
@@ -145,35 +200,6 @@ export async function json2video(videoConfig: any, options?: RenderOptions): Pro
       renderer.cleanup();
     }
   }
-}
-
-/**
- * Generate video và lưu trực tiếp ra file
- *
- * @param videoConfig - Video configuration (JSON)
- * @param outputPath - Đường dẫn file output (.mp4)
- * @param options - Render options
- *
- * @example
- * ```ts
- * await json2videoFile(
- *   { width: 1080, height: 1920, tracks: [...] },
- *   './output.mp4'
- * );
- * ```
- */
-export async function json2videoFile(videoConfig: any, outputPath: string, options?: RenderOptions): Promise<RenderResult> {
-  const result = await json2video(videoConfig, options);
-
-  // Ensure output directory exists
-  const dir = path.dirname(outputPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  fs.writeFileSync(outputPath, result.buffer);
-
-  return result;
 }
 
 /**

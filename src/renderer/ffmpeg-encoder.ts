@@ -12,6 +12,7 @@ import { EncoderConfig, getOptimalEncoder } from './platform';
 export class FFmpegEncoder {
   private ffmpegProcess: ChildProcess | null = null;
   private encoderConfig: EncoderConfig;
+  private _totalDuration: number | null = null;
 
   constructor(
     private readonly config: VideoConfig,
@@ -40,9 +41,8 @@ export class FFmpegEncoder {
   startEncoding(outputPath: string): void {
     const { encoderArgs, pixelFormat: encoderPixFmt } = this.encoderConfig;
 
-    // Input pixel format — node-canvas toBuffer('raw') outputs BGRA
-    // Nếu dùng GPU encoder, ta cần convert pixel format phù hợp
-    const inputPixFmt = 'bgra';
+    // Input pixel format — @napi-rs/canvas data() outputs RGBA
+    const inputPixFmt = 'rgba';
 
     const args = [
       '-y', // Overwrite output
@@ -74,10 +74,9 @@ export class FFmpegEncoder {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    // Handle errors
-    this.ffmpegProcess.stderr?.on('data', () => {
-      // FFmpeg logs to stderr even for normal output, suppress
-    });
+    // OPTIMIZATION: Drain stderr without event listener overhead
+    // resume() marks the stream as flowing mode, discarding data without callback per chunk
+    this.ffmpegProcess.stderr?.resume();
   }
 
   /**
@@ -257,10 +256,13 @@ export class FFmpegEncoder {
    * Tổng thời lượng video (giây)
    */
   private getTotalDuration(): number {
-    return this.config.tracks.reduce((maxEnd, track) => {
-      const trackStart = track.start || 0;
-      const trackDuration = track.scenes.reduce((sum, s) => sum + s.duration, 0);
-      return Math.max(maxEnd, trackStart + trackDuration);
-    }, 0);
+    if (this._totalDuration === null) {
+      this._totalDuration = this.config.tracks.reduce((maxEnd, track) => {
+        const trackStart = track.start || 0;
+        const trackDuration = track.scenes.reduce((sum, s) => sum + s.duration, 0);
+        return Math.max(maxEnd, trackStart + trackDuration);
+      }, 0);
+    }
+    return this._totalDuration;
   }
 }

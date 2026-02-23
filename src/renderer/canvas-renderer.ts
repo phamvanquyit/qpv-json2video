@@ -1,12 +1,13 @@
-import { Canvas, CanvasRenderingContext2D, createCanvas } from 'canvas';
+import { Canvas, createCanvas } from '@napi-rs/canvas';
+import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
 import { Scene, SceneElement, Track, VideoConfig, VideoElement } from '../types';
 import { AssetLoader } from './asset-loader';
-import { paintCaption } from './element-painters/caption.painter';
+import { paintCaption, clearCaptionCaches } from './element-painters/caption.painter';
 import { clearImageCache, paintImage } from './element-painters/image.painter';
 import { paintText } from './element-painters/text.painter';
 import { paintVideoFrame, VideoFrameExtractor } from './element-painters/video.painter';
 import { loadGoogleFont } from './google-fonts';
-import { computeElementOpacity, isElementVisible } from './utils';
+import { computeElementOpacity, isElementVisible, clearMeasureCache } from './utils';
 
 /**
  * CanvasRenderer - Core rendering engine (Optimized)
@@ -29,9 +30,15 @@ export class CanvasRenderer {
 
   // === OPTIMIZATION: Pre-sorted video tracks (sort 1 lần, dùng lại mọi frame) ===
   private sortedVideoTracks: Track[] = [];
+  private _preloadDone = false;
 
   // === OPTIMIZATION: Cache sorted elements per scene ===
   private sortedElementsCache = new Map<Scene, SceneElement[]>();
+
+  // === OPTIMIZATION: Pre-computed scene time ranges per track ===
+  // sceneTimeRanges[track] = [0, 5, 10, 15, ...] — cumulative start times
+  // Dùng binary search thay vì linear scan mỗi frame
+  private sceneTimeRanges = new Map<Track, number[]>();
 
   constructor(
     private readonly config: VideoConfig,
@@ -113,6 +120,7 @@ export class CanvasRenderer {
     this.sortedVideoTracks = this.config.tracks
       .filter(t => t.type === 'video')
       .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    this._preloadDone = true;
 
     // === PRE-COMPUTE: Sort elements per scene ===
     for (const track of this.config.tracks) {
@@ -122,6 +130,18 @@ export class CanvasRenderer {
           this.sortedElementsCache.set(scene, sorted);
         }
       }
+    }
+
+    // === PRE-COMPUTE: Scene cumulative time ranges per track ===
+    // Cho phép binary search O(log n) thay vì linear scan O(n) mỗi frame
+    for (const track of this.config.tracks) {
+      const startTimes: number[] = [];
+      let cumulative = 0;
+      for (const scene of track.scenes) {
+        startTimes.push(cumulative);
+        cumulative += scene.duration;
+      }
+      this.sceneTimeRanges.set(track, startTimes);
     }
   }
 
@@ -175,7 +195,7 @@ export class CanvasRenderer {
 
     const asset = await this.assetLoader.downloadAsset(element.url, 'video');
     const extractor = new VideoFrameExtractor(asset.localPath, this.fps);
-    extractor.extractFrames();
+    await extractor.extractFrames();
     this.videoExtractors.set(element.url, extractor);
   }
 
@@ -187,6 +207,7 @@ export class CanvasRenderer {
    * OPTIMIZATION:
    * - Reuse canvas (không tạo mới mỗi frame)
    * - Dùng pre-sorted video tracks + elements
+   * - Binary search cho scene lookup
    */
   async renderFrame(frameIndex: number): Promise<Buffer> {
     const ctx = this.ctx;
@@ -195,16 +216,17 @@ export class CanvasRenderer {
     const currentTime = frameIndex / this.fps;
 
     // Lazy init: nếu preloadAssets() chưa được gọi, tính sortedVideoTracks
-    if (this.sortedVideoTracks.length === 0) {
+    if (!this._preloadDone) {
       this.sortedVideoTracks = this.config.tracks
         .filter(t => t.type === 'video')
         .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      this._preloadDone = true;
     }
 
     // Dùng pre-sorted video tracks (đã sort 1 lần ở preloadAssets)
     const videoTracks = this.sortedVideoTracks;
 
-    // Clear canvas — dùng clearRect rồi fill (nhanh hơn fillRect trên canvas lớn)
+    // Clear canvas
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000000';
@@ -219,7 +241,7 @@ export class CanvasRenderer {
       // Track chưa bắt đầu
       if (timeInTrack < 0) continue;
 
-      // Tìm scene active trong track
+      // Tìm scene active trong track (binary search)
       const { scene, sceneTimeOffset } = this.getSceneInTrackAtTime(track, timeInTrack);
       if (!scene) continue; // Track đã kết thúc
 
@@ -273,7 +295,9 @@ export class CanvasRenderer {
       ctx.globalAlpha = 1;
     }
 
-    return this.canvas.toBuffer('raw');
+    // OPTIMIZATION: canvas.data() trả về raw RGBA buffer trực tiếp từ Skia
+    // Không cần encode/copy như toBuffer('raw') của node-canvas
+    return Buffer.from(this.canvas.data());
   }
 
   /**
@@ -316,11 +340,47 @@ export class CanvasRenderer {
 
   /**
    * Tìm scene active trong 1 track tại thời điểm timeInTrack (giây)
+   * OPTIMIZATION: Dùng pre-computed sceneTimeRanges + binary search O(log n)
    */
   private getSceneInTrackAtTime(
     track: Track,
     timeInTrack: number
   ): { scene: Scene | null; sceneTimeOffset: number } {
+    const startTimes = this.sceneTimeRanges.get(track);
+
+    if (startTimes && startTimes.length > 0) {
+      // Binary search: tìm scene cuối cùng có startTime <= timeInTrack
+      let lo = 0;
+      let hi = startTimes.length - 1;
+      let result = -1;
+
+      while (lo <= hi) {
+        const mid = (lo + hi) >>> 1;
+        if (startTimes[mid] <= timeInTrack) {
+          result = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+
+      if (result >= 0 && result < track.scenes.length) {
+        const scene = track.scenes[result];
+        const sceneStart = startTimes[result];
+        const sceneEnd = sceneStart + scene.duration;
+
+        if (timeInTrack < sceneEnd) {
+          return {
+            scene,
+            sceneTimeOffset: timeInTrack - sceneStart,
+          };
+        }
+      }
+
+      return { scene: null, sceneTimeOffset: 0 };
+    }
+
+    // Fallback: linear scan (nếu sceneTimeRanges chưa được tính)
     let accumulatedTime = 0;
 
     for (const scene of track.scenes) {
@@ -369,6 +429,10 @@ export class CanvasRenderer {
     }
     this.videoExtractors.clear();
     this.sortedElementsCache.clear();
+    this.sceneTimeRanges.clear();
     clearImageCache();
+    // OPTIMIZATION: Clear module-level caches để tránh memory leak trên long-running server
+    clearCaptionCaches();
+    clearMeasureCache();
   }
 }
