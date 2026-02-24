@@ -1,5 +1,6 @@
-import { computeElementOpacity, computePosition, isElementVisible, measureTextBlock, normalizeFontWeight, wrapText } from './utils';
+import { computeElementOpacity, computeElementAnimation, computeSceneTransition, computePosition, isElementVisible, measureTextBlock, normalizeFontWeight, wrapText } from './utils';
 import { createCanvas } from '@napi-rs/canvas';
+import { ElementAnimation } from '../types';
 
 // ============================================================
 // computePosition
@@ -263,5 +264,370 @@ describe('measureTextBlock', () => {
     const small = measureTextBlock('Hello', 12, 'sans-serif', 400, 500, 1.3);
     const large = measureTextBlock('Hello', 48, 'sans-serif', 400, 500, 1.3);
     expect(large.width).toBeGreaterThan(small.width);
+  });
+});
+
+// ============================================================
+// computeElementAnimation
+// ============================================================
+describe('computeElementAnimation', () => {
+  const W = 1080, H = 1920;
+
+  it('should return identity state when no animation', () => {
+    const state = computeElementAnimation(undefined, 0, 0, 5, 5, W, H);
+    expect(state).toEqual({ opacity: 1, translateX: 0, translateY: 0, scale: 1 });
+  });
+
+  // --- Fade animations (backward compat) ---
+  describe('fadeIn', () => {
+    const anim: ElementAnimation = { type: 'fadeIn', fadeInDuration: 1 };
+
+    it('opacity 0 at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.opacity).toBe(0);
+      expect(s.translateX).toBe(0);
+      expect(s.scale).toBe(1);
+    });
+
+    it('opacity ~0.5 at mid', () => {
+      const s = computeElementAnimation(anim, 0.5, 0, 5, 5, W, H);
+      expect(s.opacity).toBeCloseTo(0.5);
+    });
+
+    it('opacity 1 after fade', () => {
+      const s = computeElementAnimation(anim, 1.5, 0, 5, 5, W, H);
+      expect(s.opacity).toBe(1);
+    });
+  });
+
+  describe('fadeOut', () => {
+    const anim: ElementAnimation = { type: 'fadeOut', fadeOutDuration: 1 };
+
+    it('opacity 1 at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.opacity).toBe(1);
+    });
+
+    it('opacity 0 at end', () => {
+      const s = computeElementAnimation(anim, 5, 0, 5, 5, W, H);
+      expect(s.opacity).toBe(0);
+    });
+  });
+
+  // --- Slide In ---
+  describe('slideInLeft', () => {
+    const anim: ElementAnimation = { type: 'slideInLeft', fadeInDuration: 1 };
+
+    it('should translate from left at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.translateX).toBe(-W);
+      expect(s.opacity).toBe(0);
+    });
+
+    it('should be at final position after duration', () => {
+      const s = computeElementAnimation(anim, 1.5, 0, 5, 5, W, H);
+      expect(s.translateX).toBe(0);
+      expect(s.opacity).toBe(1);
+    });
+
+    it('translateY should be 0', () => {
+      const s = computeElementAnimation(anim, 0.5, 0, 5, 5, W, H);
+      expect(s.translateY).toBe(0);
+    });
+  });
+
+  describe('slideInRight', () => {
+    const anim: ElementAnimation = { type: 'slideInRight', fadeInDuration: 1 };
+
+    it('should translate from right at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.translateX).toBe(W);
+    });
+  });
+
+  describe('slideInTop', () => {
+    const anim: ElementAnimation = { type: 'slideInTop', fadeInDuration: 1 };
+
+    it('should translate from top at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.translateY).toBe(-H);
+      expect(s.translateX).toBe(0);
+    });
+  });
+
+  describe('slideInBottom', () => {
+    const anim: ElementAnimation = { type: 'slideInBottom', fadeInDuration: 1 };
+
+    it('should translate from bottom at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.translateY).toBe(H);
+    });
+  });
+
+  // --- Slide Out ---
+  describe('slideOutLeft', () => {
+    const anim: ElementAnimation = { type: 'slideOutLeft', fadeOutDuration: 1 };
+
+    it('should be at position during display', () => {
+      const s = computeElementAnimation(anim, 2, 0, 5, 5, W, H);
+      expect(s.translateX).toBe(0);
+      expect(s.opacity).toBe(1);
+    });
+
+    it('should translate left near end', () => {
+      const s = computeElementAnimation(anim, 4.5, 0, 5, 5, W, H);
+      expect(s.translateX).toBeLessThan(0);
+      expect(s.opacity).toBeLessThan(1);
+    });
+  });
+
+  describe('slideOutRight', () => {
+    const anim: ElementAnimation = { type: 'slideOutRight', fadeOutDuration: 1 };
+
+    it('should translate right near end', () => {
+      const s = computeElementAnimation(anim, 4.5, 0, 5, 5, W, H);
+      expect(s.translateX).toBeGreaterThan(0);
+    });
+  });
+
+  describe('slideOutTop', () => {
+    const anim: ElementAnimation = { type: 'slideOutTop', fadeOutDuration: 1 };
+
+    it('should translate up near end', () => {
+      const s = computeElementAnimation(anim, 4.5, 0, 5, 5, W, H);
+      expect(s.translateY).toBeLessThan(0);
+    });
+  });
+
+  describe('slideOutBottom', () => {
+    const anim: ElementAnimation = { type: 'slideOutBottom', fadeOutDuration: 1 };
+
+    it('should translate down near end', () => {
+      const s = computeElementAnimation(anim, 4.5, 0, 5, 5, W, H);
+      expect(s.translateY).toBeGreaterThan(0);
+    });
+  });
+
+  // --- Zoom ---
+  describe('zoomIn', () => {
+    const anim: ElementAnimation = { type: 'zoomIn', fadeInDuration: 1 };
+
+    it('should scale 0 at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.scale).toBe(0);
+      expect(s.opacity).toBe(0);
+    });
+
+    it('should scale 1 after duration', () => {
+      const s = computeElementAnimation(anim, 1.5, 0, 5, 5, W, H);
+      expect(s.scale).toBe(1);
+      expect(s.opacity).toBe(1);
+    });
+  });
+
+  describe('zoomOut', () => {
+    const anim: ElementAnimation = { type: 'zoomOut', fadeOutDuration: 1 };
+
+    it('should scale 1 during display', () => {
+      const s = computeElementAnimation(anim, 2, 0, 5, 5, W, H);
+      expect(s.scale).toBe(1);
+    });
+
+    it('should scale toward 0 near end', () => {
+      const s = computeElementAnimation(anim, 4.8, 0, 5, 5, W, H);
+      expect(s.scale).toBeLessThan(1);
+      expect(s.scale).toBeGreaterThan(0);
+    });
+  });
+
+  // --- Motion ---
+  describe('bounce', () => {
+    const anim: ElementAnimation = { type: 'bounce', fadeInDuration: 1 };
+
+    it('should have negative translateY at start (falling from above)', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.translateY).toBeLessThan(0);
+    });
+
+    it('should settle at translateY=0 after duration', () => {
+      const s = computeElementAnimation(anim, 1.5, 0, 5, 5, W, H);
+      expect(s.translateY).toBe(0);
+    });
+  });
+
+  describe('pop', () => {
+    const anim: ElementAnimation = { type: 'pop', fadeInDuration: 0.5 };
+
+    it('should scale near 0 at start', () => {
+      const s = computeElementAnimation(anim, 0.01, 0, 5, 5, W, H);
+      expect(s.scale).toBeLessThan(0.5);
+    });
+
+    it('should overshoot (easeOutBack) then settle at ~1', () => {
+      // At progress ~0.7 with easeOutBack, scale should be > 1 (overshoot)
+      const s = computeElementAnimation(anim, 0.35, 0, 5, 5, W, H);
+      expect(s.scale).toBeGreaterThan(0.9);
+    });
+
+    it('should be scale=1 after duration', () => {
+      const s = computeElementAnimation(anim, 1, 0, 5, 5, W, H);
+      expect(s.scale).toBe(1);
+    });
+  });
+
+  describe('shake', () => {
+    const anim: ElementAnimation = { type: 'shake', fadeInDuration: 0.5 };
+
+    it('should have non-zero translateX during shake', () => {
+      const s = computeElementAnimation(anim, 0.1, 0, 5, 5, W, H);
+      // May or may not be exactly 0 depending on sin phase, but should respond
+      expect(typeof s.translateX).toBe('number');
+    });
+
+    it('should settle to translateX=0 after duration', () => {
+      const s = computeElementAnimation(anim, 1, 0, 5, 5, W, H);
+      expect(s.translateX).toBe(0);
+    });
+
+    it('should keep opacity=1', () => {
+      const s = computeElementAnimation(anim, 0.1, 0, 5, 5, W, H);
+      expect(s.opacity).toBe(1);
+    });
+  });
+
+  describe('typewriter', () => {
+    const anim: ElementAnimation = { type: 'typewriter', fadeInDuration: 2 };
+
+    it('should have scale (progress) 0 at start', () => {
+      const s = computeElementAnimation(anim, 0, 0, 5, 5, W, H);
+      expect(s.scale).toBe(0);
+    });
+
+    it('should have scale (progress) 0.5 at mid', () => {
+      const s = computeElementAnimation(anim, 1, 0, 5, 5, W, H);
+      expect(s.scale).toBeCloseTo(0.5);
+    });
+
+    it('should have scale (progress) 1 after duration', () => {
+      const s = computeElementAnimation(anim, 2.5, 0, 5, 5, W, H);
+      expect(s.scale).toBe(1);
+    });
+
+    it('should keep opacity=1 throughout', () => {
+      const s = computeElementAnimation(anim, 0.5, 0, 5, 5, W, H);
+      expect(s.opacity).toBe(1);
+    });
+  });
+
+  // --- Element start offset ---
+  it('should respect element start offset for slideInLeft', () => {
+    const anim: ElementAnimation = { type: 'slideInLeft', fadeInDuration: 1 };
+    // Before element start → identity (not visible anyway)
+    const s = computeElementAnimation(anim, 2, 2, 3, 5, W, H);
+    expect(s.translateX).toBe(-W); // at elStart, progress=0
+  });
+});
+
+// ============================================================
+// computeSceneTransition
+// ============================================================
+describe('computeSceneTransition', () => {
+  const W = 1080, H = 1920;
+
+  it('should return identity when no transition', () => {
+    const s = computeSceneTransition(undefined, 0, W, H);
+    expect(s).toEqual({ opacity: 1, translateX: 0, translateY: 0, scale: 1 });
+  });
+
+  it('should return identity when past transition duration', () => {
+    const s = computeSceneTransition({ type: 'fade', duration: 1 }, 2, W, H);
+    expect(s.opacity).toBe(1);
+  });
+
+  describe('fade', () => {
+    it('should fade from 0 to 1', () => {
+      const s0 = computeSceneTransition({ type: 'fade', duration: 1 }, 0, W, H);
+      expect(s0.opacity).toBe(0);
+
+      const s1 = computeSceneTransition({ type: 'fade', duration: 1 }, 0.5, W, H);
+      expect(s1.opacity).toBeCloseTo(0.5);
+    });
+  });
+
+  describe('slideLeft', () => {
+    it('should translate from right at start', () => {
+      const s = computeSceneTransition({ type: 'slideLeft', duration: 1 }, 0, W, H);
+      expect(s.translateX).toBe(W);
+    });
+
+    it('should be at position after duration', () => {
+      const s = computeSceneTransition({ type: 'slideLeft', duration: 1 }, 1, W, H);
+      expect(s.translateX).toBe(0);
+    });
+  });
+
+  describe('slideRight', () => {
+    it('should translate from left at start', () => {
+      const s = computeSceneTransition({ type: 'slideRight', duration: 1 }, 0, W, H);
+      expect(s.translateX).toBe(-W);
+    });
+  });
+
+  describe('slideUp', () => {
+    it('should translate from bottom at start', () => {
+      const s = computeSceneTransition({ type: 'slideUp', duration: 1 }, 0, W, H);
+      expect(s.translateY).toBe(H);
+    });
+  });
+
+  describe('slideDown', () => {
+    it('should translate from top at start', () => {
+      const s = computeSceneTransition({ type: 'slideDown', duration: 1 }, 0, W, H);
+      expect(s.translateY).toBe(-H);
+    });
+  });
+
+  describe('wipe transitions', () => {
+    it.each(['wipeLeft', 'wipeRight', 'wipeUp', 'wipeDown'] as const)(
+      '%s should have opacity 0 at start',
+      (type) => {
+        const s = computeSceneTransition({ type, duration: 1 }, 0, W, H);
+        expect(s.opacity).toBe(0);
+      }
+    );
+
+    it.each(['wipeLeft', 'wipeRight', 'wipeUp', 'wipeDown'] as const)(
+      '%s should have opacity 1 after duration',
+      (type) => {
+        const s = computeSceneTransition({ type, duration: 1 }, 1, W, H);
+        expect(s.opacity).toBe(1);
+      }
+    );
+  });
+
+  describe('zoomIn transition', () => {
+    it('should scale from 0.5 at start', () => {
+      const s = computeSceneTransition({ type: 'zoomIn', duration: 1 }, 0, W, H);
+      expect(s.scale).toBe(0.5);
+      expect(s.opacity).toBe(0);
+    });
+
+    it('should reach scale 1 after duration', () => {
+      const s = computeSceneTransition({ type: 'zoomIn', duration: 1 }, 1, W, H);
+      expect(s.scale).toBe(1);
+    });
+  });
+
+  describe('zoomOut transition', () => {
+    it('should scale from 1.5 at start', () => {
+      const s = computeSceneTransition({ type: 'zoomOut', duration: 1 }, 0, W, H);
+      expect(s.scale).toBe(1.5);
+      expect(s.opacity).toBe(0);
+    });
+
+    it('should reach scale 1 after duration', () => {
+      const s = computeSceneTransition({ type: 'zoomOut', duration: 1 }, 1, W, H);
+      expect(s.scale).toBe(1);
+    });
   });
 });

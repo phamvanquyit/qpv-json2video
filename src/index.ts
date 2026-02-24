@@ -6,6 +6,7 @@ export type { EncoderConfig, PlatformType } from './renderer/platform';
 
 // Types
 export type {
+  AnimationType,
   AudioConfig,
   CachedAsset,
   CaptionElement,
@@ -19,8 +20,10 @@ export type {
   Scene,
   SceneElement,
   SceneTransition,
+  ShapeElement,
   TextElement,
   Track,
+  TransitionType,
   VideoConfig,
   VideoElement,
   WordHighlightStyle,

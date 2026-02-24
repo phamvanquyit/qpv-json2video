@@ -1,6 +1,6 @@
 ---
 name: qpv-json2video Video Scripter
-description: Generate professional video scripts in JSON format for the qpv-json2video library. Supports multi-track timeline, text/image/video/caption elements, animations, transitions, audio mixing, and word-level karaoke highlighting.
+description: Generate professional video scripts in JSON format for the qpv-json2video library. Supports multi-track timeline, text/image/video/caption elements, animations, transitions, audio mixing, word-level karaoke highlighting, drop shadows, glow effects, gradients, and video speed control.
 ---
 
 # qpv-json2video Video Scripter
@@ -43,18 +43,20 @@ Each track contains scenes that play one after another. Scenes have:
 
 - `duration`: How long in seconds
 - `bgColor`: Background color (only visible if no full-screen element covers it)
+- `bgGradient`: Gradient background (replaces bgColor when set)
 - `elements`: Visual elements to display
 - `audio`: Scene-level audio
-- `transition`: Fade transition from previous scene
+- `transition`: Transition from previous scene (fade, slide, wipe, zoom)
 
 ### 3. Elements
 
-4 element types available:
+5 element types available:
 
 - **text** — Styled text with Google Fonts, stroke, background
 - **image** — Remote images with fit modes and border radius
 - **video** — Video clips with trim, loop, opacity
 - **caption** — SRT subtitles with optional word-level karaoke highlighting
+- **shape** — Rectangles with fill, stroke (borders/frames), border radius
 
 ### 4. Element Timing Within Scene
 
@@ -162,11 +164,32 @@ Check:
 {
   "duration": 5, // Required: seconds
   "bgColor": "#000000", // Optional: default "#000000"
+  "bgGradient": {
+    // Optional: gradient background (replaces bgColor)
+    "colors": ["#1a1a2e", "#16213e", "#0f3460"], // At least 2 colors
+    "angle": 135 // Degrees: 0=left→right, 90=top→bottom, default: 0
+  },
   "elements": [], // Optional: visual elements
   "audio": {}, // Optional: AudioConfig
-  "transition": { "type": "fade", "duration": 0.8 } // Optional: from previous scene
+  "transition": { "type": "fade", "duration": 0.8 } // Optional: transition from previous scene
 }
 ```
+
+**TransitionType values:**
+
+| Type           | Description                                         |
+| -------------- | --------------------------------------------------- |
+| `"fade"`       | Standard crossfade (default)                        |
+| `"slideLeft"`  | New scene slides in from right, old slides out left |
+| `"slideRight"` | New scene slides in from left                       |
+| `"slideUp"`    | New scene slides in from bottom                     |
+| `"slideDown"`  | New scene slides in from top                        |
+| `"wipeLeft"`   | New scene reveals from right to left                |
+| `"wipeRight"`  | New scene reveals from left to right                |
+| `"wipeUp"`     | New scene reveals from bottom to top                |
+| `"wipeDown"`   | New scene reveals from top to bottom                |
+| `"zoomIn"`     | New scene zooms in from small to full               |
+| `"zoomOut"`    | New scene zooms out from large to full              |
 
 ### Base Element Properties (shared by all elements)
 
@@ -177,17 +200,48 @@ Check:
   "offsetX": 0, // Optional: horizontal offset (px)
   "offsetY": 0, // Optional: vertical offset (px)
   "opacity": 1, // Optional: 0–1
+  "scale": 1, // Optional: scale factor (1.5 = 150%)
+  "rotation": 0, // Optional: rotation in degrees (45 = 45° clockwise)
   "borderRadius": 0, // Optional: corner radius (px)
   "start": 0, // Optional: start time within scene (s)
   "duration": null, // Optional: display duration (s), null = full scene
   "animation": {
     // Optional
-    "type": "fadeIn", // "fadeIn" | "fadeOut" | "fadeInOut"
-    "fadeInDuration": 0.5,
-    "fadeOutDuration": 0.5
+    "type": "fadeIn", // See AnimationType table below
+    "fadeInDuration": 0.5, // Duration for "in" animations (s)
+    "fadeOutDuration": 0.5 // Duration for "out" animations (s)
+  },
+  "shadow": {
+    // Optional: drop shadow for any element
+    "color": "rgba(0,0,0,0.5)", // Shadow color
+    "blur": 15, // Shadow blur radius (px)
+    "offsetX": 5, // Horizontal offset (px)
+    "offsetY": 5 // Vertical offset (px)
   }
 }
 ```
+
+**AnimationType values:**
+
+| Type               | Category  | Description                        |
+| ------------------ | --------- | ---------------------------------- |
+| `"fadeIn"`         | Fade      | Fade in from transparent           |
+| `"fadeOut"`        | Fade      | Fade out to transparent            |
+| `"fadeInOut"`      | Fade      | Fade in at start, fade out at end  |
+| `"slideInLeft"`    | Slide     | Slide in from left edge            |
+| `"slideInRight"`   | Slide     | Slide in from right edge           |
+| `"slideInTop"`     | Slide     | Slide in from top edge             |
+| `"slideInBottom"`  | Slide     | Slide in from bottom edge          |
+| `"slideOutLeft"`   | Slide     | Slide out to left edge             |
+| `"slideOutRight"`  | Slide     | Slide out to right edge            |
+| `"slideOutTop"`    | Slide     | Slide out to top edge              |
+| `"slideOutBottom"` | Slide     | Slide out to bottom edge           |
+| `"zoomIn"`         | Zoom      | Scale from 0 to 1 with fade        |
+| `"zoomOut"`        | Zoom      | Scale from 1 to 0 with fade        |
+| `"bounce"`         | Motion    | Drop from above with bounce easing |
+| `"pop"`            | Motion    | Scale 0→1.2→1 (overshoot pop-in)   |
+| `"shake"`          | Motion    | Horizontal shake with decay        |
+| `"typewriter"`     | Text-only | Reveal text character by character |
 
 **PositionType values:**
 `"top-left"`, `"top-center"`, `"top-right"`, `"left"`, `"center"`, `"right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"`
@@ -209,6 +263,17 @@ Check:
   "strokeWidth": 3, // Optional: outline thickness (default: 0)
   "lineHeight": 1.3, // Optional: default 1.3
   "padding": 10, // Optional: padding inside bgColor box (default: 10)
+  "glow": {
+    // Optional: neon glow effect
+    "color": "#00FF88", // Glow color
+    "blur": 15 // Glow radius (px)
+  },
+  "gradient": {
+    // Optional: gradient fill (replaces solid color)
+    "type": "linear", // "linear" or "radial"
+    "colors": ["#FF6B6B", "#4ECDC4"], // At least 2 colors
+    "angle": 0 // Degrees (linear only)
+  },
   "position": "center",
   "zIndex": 1
 }
@@ -240,10 +305,41 @@ Check:
   "trimStart": 0, // Optional: skip first N seconds (default: 0)
   "loop": false, // Optional: loop video (default: false)
   "volume": 0.5, // Optional: audio volume
+  "speed": 1, // Optional: playback speed (0.5=slow-mo, 2=fast-forward, default: 1)
   "position": "center",
   "zIndex": 0
 }
 ```
+
+### Shape Element (Rectangles, Frames)
+
+```json
+{
+  "type": "shape",
+  "width": 500, // Required: width (px)
+  "height": 300, // Required: height (px)
+  "bgColor": "#ff0000", // Optional: fill color (default: transparent)
+  "strokeColor": "#ffffff", // Optional: border color (default: none)
+  "strokeWidth": 4, // Optional: border thickness (default: 2)
+  "borderRadius": 20, // Optional: rounded corners (default: 0)
+  "gradient": {
+    // Optional: gradient fill (replaces bgColor)
+    "type": "linear", // "linear" or "radial"
+    "colors": ["#667eea", "#764ba2"], // At least 2 colors
+    "angle": 135 // Degrees (linear only)
+  },
+  "position": "center",
+  "zIndex": 1
+}
+```
+
+**Use cases:**
+
+- **Photo frame (stroke-only):** Set `strokeColor` without `bgColor` → transparent inside, visible border
+- **Colored box:** Set `bgColor` only → filled rectangle
+- **Gradient box:** Set `gradient` → gradient-filled rectangle (overrides bgColor)
+- **Framed box:** Set both `bgColor` + `strokeColor` → filled with border
+- **Decorative overlay:** Semi-transparent `bgColor: "rgba(0,0,0,0.5)"` for dimming background
 
 ### Caption Element (SRT Subtitles)
 
@@ -329,22 +425,44 @@ Check:
 - Use `strokeColor` + `strokeWidth` for text readability over busy backgrounds
 - Set `maxWidth: "80%"` to prevent text from touching edges
 
-### Colors
+### Colors & Gradients
 
 - Use semi-transparent backgrounds: `"rgba(0,0,0,0.5)"` for text readability
 - Highlight colors for karaoke: `"#FFD700"` (gold), `"#FF6B35"` (orange), `"#00E5FF"` (cyan)
 - Dark backgrounds: `"#0a0a1a"`, `"#1a1a2e"`, `"#16213e"`
+- Use `bgGradient` on scenes for premium backgrounds: `{ "colors": ["#0f0c29", "#302b63", "#24243e"], "angle": 135 }`
+- Use `gradient` on text for eye-catching titles: `{ "type": "linear", "colors": ["#FF6B6B", "#4ECDC4"] }`
+- Use `gradient` on shapes for modern UI elements
+
+### Shadows & Glow
+
+- Use `shadow` on text for readability: `{ "color": "rgba(0,0,0,0.6)", "blur": 10, "offsetX": 0, "offsetY": 4 }`
+- Use `shadow` on images/shapes for depth: `{ "color": "rgba(0,0,0,0.5)", "blur": 20, "offsetX": 0, "offsetY": 10 }`
+- Use `glow` on text for neon effects: `{ "color": "#00FF88", "blur": 20 }` — great with dark backgrounds
+- Combine `glow` + `gradient` on text for premium visual effects
 
 ### Animations
 
 - Use `fadeIn` on scene-opening titles (0.8–1.5s)
 - Use `fadeOut` on closing elements (0.5–1s)
 - Use `fadeInOut` for elements that appear mid-scene
+- Use `slideInBottom` for titles appearing from below (energetic feel)
+- Use `slideInLeft`/`slideInRight` for side-entering content
+- Use `zoomIn` for impactful reveals (hero text, product images)
+- Use `pop` for attention-grabbing elements (prices, badges, CTAs)
+- Use `bounce` for playful, fun elements
+- Use `shake` sparingly for emphasis/alert moments
+- Use `typewriter` for narration text or quote reveals
 - Don't animate everything — reserve for emphasis
+- `scale: 1.5` + `rotation: -5` creates dynamic tilted-zoom effects
 
 ### Transitions
 
 - Use `fade` transitions between scenes: `{ "type": "fade", "duration": 0.5–1.0 }`
+- Use `slideLeft`/`slideRight` for sequential content (product features)
+- Use `slideUp` for scroll-like content flow
+- Use `zoomIn` for dramatic scene changes
+- Use `wipeLeft` for cinematic reveals
 - Not every scene needs a transition — use for mood/topic changes
 
 ### Audio

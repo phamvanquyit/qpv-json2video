@@ -5,7 +5,7 @@ Generate videos from JSON configuration using `@napi-rs/canvas` (Skia) and `FFmp
 ## Features
 
 - **Multi-track timeline** — overlay multiple video/audio tracks with zIndex ordering
-- **4 element types** — Text, Image, Video, Caption (SRT subtitles)
+- **5 element types** — Text, Image, Video, Caption (SRT subtitles), Shape (rectangles/frames)
 - **Scene transitions** — fade between scenes
 - **Animations** — fadeIn, fadeOut, fadeInOut on any element
 - **Positioning** — 9 preset positions + custom offset
@@ -287,6 +287,39 @@ Track audio   [♪♪♪♪♪♪♪♪♪♪♪♪ BGM ♪♪♪♪♪♪♪♪
 | `trimStart` | `number`  | `0`          | Skip first N seconds           |
 | `loop`      | `boolean` | `false`      | Loop video                     |
 | `volume`    | `number`  |              | Audio volume of video element  |
+
+---
+
+### Shape Element (Rectangles, Frames)
+
+```json
+{
+  "type": "shape",
+  "width": 500,
+  "height": 300,
+  "bgColor": "#ff0000",
+  "strokeColor": "#ffffff",
+  "strokeWidth": 4,
+  "borderRadius": 20,
+  "position": "center",
+  "zIndex": 1
+}
+```
+
+| Field         | Type     | Default      | Description                |
+| ------------- | -------- | ------------ | -------------------------- |
+| `width`       | `number` | **required** | Width (px)                 |
+| `height`      | `number` | **required** | Height (px)                |
+| `bgColor`     | `string` | transparent  | Fill color (supports rgba) |
+| `strokeColor` | `string` |              | Border color               |
+| `strokeWidth` | `number` | `2`          | Border thickness (px)      |
+
+**Use cases:**
+
+- **Photo frame:** `strokeColor` only → transparent inside, visible border
+- **Colored box:** `bgColor` only → filled rectangle
+- **Framed box:** both `bgColor` + `strokeColor` → filled with border
+- **Dimming overlay:** `bgColor: "rgba(0,0,0,0.5)"` → semi-transparent overlay
 
 ---
 

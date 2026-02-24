@@ -174,17 +174,22 @@ export async function paintVideoFrame(
   extractor: VideoFrameExtractor,
   frameIndex: number
 ): Promise<void> {
-  const { width, height, position = 'center', fit = 'cover', offsetX = 0, offsetY = 0, borderRadius = 0, loop = false, opacity = 1, trimStart = 0 } = element;
+  const { width, height, position = 'center', fit = 'cover', offsetX = 0, offsetY = 0, borderRadius = 0, loop = false, opacity = 1, trimStart = 0, speed = 1 } = element;
+
+  // Handle speed: multiply frame index to change playback rate
+  // speed=2 → skip every other frame (fast forward)
+  // speed=0.5 → repeat frames (slow motion)
+  const speedAdjustedFrame = Math.round(frameIndex * speed);
 
   // Handle loop + trimStart: offset frame index
-  let actualFrameIndex = frameIndex + Math.round(trimStart * extractor['fps']);
+  let actualFrameIndex = speedAdjustedFrame + Math.round(trimStart * extractor['fps']);
   const totalFrames = extractor.getTotalFrames();
 
   if (totalFrames === 0) return;
 
-  if (loop && frameIndex > totalFrames) {
-    actualFrameIndex = ((frameIndex - 1) % totalFrames) + 1;
-  } else if (frameIndex > totalFrames) {
+  if (loop && speedAdjustedFrame > totalFrames) {
+    actualFrameIndex = ((speedAdjustedFrame - 1) % totalFrames) + 1 + Math.round(trimStart * extractor['fps']);
+  } else if (speedAdjustedFrame > totalFrames) {
     actualFrameIndex = totalFrames; // Freeze last frame
   }
 

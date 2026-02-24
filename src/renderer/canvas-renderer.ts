@@ -4,10 +4,16 @@ import { Scene, SceneElement, Track, VideoConfig, VideoElement } from '../types'
 import { AssetLoader } from './asset-loader';
 import { paintCaption, clearCaptionCaches } from './element-painters/caption.painter';
 import { clearImageCache, paintImage } from './element-painters/image.painter';
+import { paintShape } from './element-painters/shape.painter';
 import { paintText } from './element-painters/text.painter';
 import { paintVideoFrame, VideoFrameExtractor } from './element-painters/video.painter';
 import { loadGoogleFont } from './google-fonts';
-import { computeElementOpacity, isElementVisible, clearMeasureCache } from './utils';
+import {
+  computeElementAnimation, computeSceneTransition,
+  isElementVisible, clearMeasureCache,
+  createGradient,
+  ElementAnimationState,
+} from './utils';
 
 /**
  * CanvasRenderer - Core rendering engine (Optimized)
@@ -211,6 +217,8 @@ export class CanvasRenderer {
    */
   async renderFrame(frameIndex: number): Promise<Buffer> {
     const ctx = this.ctx;
+    const canvasW = this.config.width;
+    const canvasH = this.config.height;
 
     // Thời gian hiện tại trên timeline (giây)
     const currentTime = frameIndex / this.fps;
@@ -230,7 +238,7 @@ export class CanvasRenderer {
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, this.config.width, this.config.height);
+    ctx.fillRect(0, 0, canvasW, canvasH);
 
     let hasRenderedAnyTrack = false;
 
@@ -245,24 +253,45 @@ export class CanvasRenderer {
       const { scene, sceneTimeOffset } = this.getSceneInTrackAtTime(track, timeInTrack);
       if (!scene) continue; // Track đã kết thúc
 
-      // Vẽ bgColor cho scene
+      // Vẽ background cho scene (gradient hoặc solid color)
       if (!hasRenderedAnyTrack) {
-        ctx.fillStyle = scene.bgColor || '#000000';
-        ctx.fillRect(0, 0, this.config.width, this.config.height);
+        if (scene.bgGradient && scene.bgGradient.colors.length >= 2) {
+          ctx.fillStyle = createGradient(ctx, { type: 'linear', colors: scene.bgGradient.colors, angle: scene.bgGradient.angle }, 0, 0, canvasW, canvasH) as unknown as string;
+        } else {
+          ctx.fillStyle = scene.bgColor || '#000000';
+        }
+        ctx.fillRect(0, 0, canvasW, canvasH);
         hasRenderedAnyTrack = true;
+      } else if (scene.bgGradient && scene.bgGradient.colors.length >= 2) {
+        ctx.fillStyle = createGradient(ctx, { type: 'linear', colors: scene.bgGradient.colors, angle: scene.bgGradient.angle }, 0, 0, canvasW, canvasH) as unknown as string;
+        ctx.fillRect(0, 0, canvasW, canvasH);
       } else if (scene.bgColor) {
         ctx.fillStyle = scene.bgColor;
-        ctx.fillRect(0, 0, this.config.width, this.config.height);
+        ctx.fillRect(0, 0, canvasW, canvasH);
+      }
+
+      // Scene transition state
+      const transState = computeSceneTransition(scene.transition, sceneTimeOffset, canvasW, canvasH);
+      const hasSceneTransform = transState.opacity < 1 || transState.translateX !== 0 ||
+        transState.translateY !== 0 || transState.scale !== 1;
+
+      if (hasSceneTransform) {
+        ctx.save();
+        ctx.globalAlpha = transState.opacity;
+        if (transState.translateX !== 0 || transState.translateY !== 0) {
+          ctx.translate(transState.translateX, transState.translateY);
+        }
+        if (transState.scale !== 1) {
+          const cx = canvasW / 2;
+          const cy = canvasH / 2;
+          ctx.translate(cx, cy);
+          ctx.scale(transState.scale, transState.scale);
+          ctx.translate(-cx, -cy);
+        }
       }
 
       // Vẽ elements
       const sceneFrameOffset = Math.floor(sceneTimeOffset * this.fps);
-
-      // Scene transition fade
-      const sceneTransitionAlpha = this.computeSceneTransitionAlpha(scene, sceneTimeOffset);
-      if (sceneTransitionAlpha < 1) {
-        ctx.globalAlpha = sceneTransitionAlpha;
-      }
 
       // Dùng cached sorted elements, hoặc tính lazy nếu chưa có
       let sortedElements = this.sortedElementsCache.get(scene);
@@ -277,18 +306,76 @@ export class CanvasRenderer {
             continue;
           }
 
-          // Compute animation opacity
-          const animOpacity = computeElementOpacity(
-            element.opacity, element.animation,
-            sceneTimeOffset, element.start, element.duration, scene.duration
+          // Compute full animation state
+          const animState = computeElementAnimation(
+            element.animation, sceneTimeOffset,
+            element.start, element.duration, scene.duration,
+            canvasW, canvasH
           );
-          ctx.globalAlpha = (sceneTransitionAlpha < 1 ? sceneTransitionAlpha : 1) * animOpacity;
 
-          await this.paintElement(ctx, element, sceneTimeOffset, scene.duration, sceneFrameOffset);
+          // Compute effective opacity: base * animation * scene transition
+          const baseOpacity = element.opacity ?? 1;
+          const sceneAlpha = hasSceneTransform ? transState.opacity : 1;
+          const effectiveOpacity = baseOpacity * animState.opacity * sceneAlpha;
+
+          if (effectiveOpacity <= 0) continue;
+
+          // Check if we need canvas transform
+          const needsTransform = animState.translateX !== 0 || animState.translateY !== 0 ||
+            animState.scale !== 1 || (element.scale && element.scale !== 1) ||
+            (element.rotation && element.rotation !== 0);
+
+          if (needsTransform) {
+            ctx.save();
+
+            // Apply animation translate
+            if (animState.translateX !== 0 || animState.translateY !== 0) {
+              ctx.translate(animState.translateX, animState.translateY);
+            }
+
+            // Apply element scale + animation scale at canvas center
+            const elScale = (element.scale ?? 1) * animState.scale;
+            const elRotation = element.rotation ?? 0;
+
+            if (elScale !== 1 || elRotation !== 0) {
+              // Scale/rotate around canvas center for simplicity
+              const cx = canvasW / 2;
+              const cy = canvasH / 2;
+              ctx.translate(cx, cy);
+              if (elScale !== 1) ctx.scale(elScale, elScale);
+              if (elRotation !== 0) ctx.rotate((elRotation * Math.PI) / 180);
+              ctx.translate(-cx, -cy);
+            }
+          }
+
+          // Apply drop shadow nếu element có shadow config
+          const shadow = element.shadow;
+          if (shadow) {
+            if (!needsTransform) ctx.save();
+            ctx.shadowColor = shadow.color;
+            ctx.shadowBlur = shadow.blur;
+            ctx.shadowOffsetX = shadow.offsetX;
+            ctx.shadowOffsetY = shadow.offsetY;
+          }
+
+          // Set opacity (without scene alpha double-counting if scene transform is active)
+          ctx.globalAlpha = hasSceneTransform
+            ? baseOpacity * animState.opacity  // scene alpha already applied via ctx.save
+            : effectiveOpacity;
+
+          await this.paintElement(ctx, element, sceneTimeOffset, scene.duration, sceneFrameOffset, animState);
+
+          if (needsTransform || shadow) {
+            ctx.restore();
+          }
 
           // Restore alpha
           ctx.globalAlpha = 1;
         }
+      }
+
+      if (hasSceneTransform) {
+        ctx.restore();
       }
 
       // Restore global alpha after scene
@@ -308,11 +395,12 @@ export class CanvasRenderer {
     element: SceneElement,
     currentTime: number,
     sceneDuration: number,
-    sceneFrameOffset: number
+    sceneFrameOffset: number,
+    animState?: ElementAnimationState
   ): Promise<void> {
     switch (element.type) {
       case 'text':
-        paintText(ctx, element, this.config.width, this.config.height, currentTime, sceneDuration);
+        paintText(ctx, element, this.config.width, this.config.height, currentTime, sceneDuration, animState);
         break;
 
       case 'image':
@@ -334,6 +422,10 @@ export class CanvasRenderer {
 
       case 'caption':
         paintCaption(ctx, element, this.config.width, this.config.height, currentTime);
+        break;
+
+      case 'shape':
+        paintShape(ctx, element, this.config.width, this.config.height);
         break;
     }
   }
@@ -396,21 +488,6 @@ export class CanvasRenderer {
     return { scene: null, sceneTimeOffset: 0 };
   }
 
-  /**
-   * Tính alpha cho scene transition (fade in tại đầu scene)
-   */
-  private computeSceneTransitionAlpha(scene: Scene, sceneTimeOffset: number): number {
-    if (!scene.transition) return 1;
-
-    if (scene.transition.type === 'fade') {
-      const fadeDuration = scene.transition.duration;
-      if (sceneTimeOffset < fadeDuration) {
-        return sceneTimeOffset / fadeDuration;
-      }
-    }
-
-    return 1;
-  }
 
   /**
    * Lấy asset loader (để FFmpeg encoder lấy audio paths)

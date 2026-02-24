@@ -14,22 +14,84 @@ export type PositionType =
 
 /**
  * Animation type cho elements
+ *
+ * Fade: fadeIn, fadeOut, fadeInOut
+ * Slide: slideInLeft, slideInRight, slideInTop, slideInBottom,
+ *        slideOutLeft, slideOutRight, slideOutTop, slideOutBottom
+ * Zoom: zoomIn, zoomOut
+ * Motion: bounce, pop, shake
+ * Text-only: typewriter
  */
+export type AnimationType =
+  | 'fadeIn' | 'fadeOut' | 'fadeInOut'
+  | 'slideInLeft' | 'slideInRight' | 'slideInTop' | 'slideInBottom'
+  | 'slideOutLeft' | 'slideOutRight' | 'slideOutTop' | 'slideOutBottom'
+  | 'zoomIn' | 'zoomOut'
+  | 'bounce' | 'pop' | 'shake'
+  | 'typewriter';
+
 export interface ElementAnimation {
   /** Loại animation */
-  type: 'fadeIn' | 'fadeOut' | 'fadeInOut';
-  /** Thời lượng fade in (giây) */
+  type: AnimationType;
+  /** Thời lượng animation vào (giây), mặc định 0.5 */
   fadeInDuration?: number;
-  /** Thời lượng fade out (giây) */
+  /** Thời lượng animation ra (giây), mặc định 0.5 */
   fadeOutDuration?: number;
 }
 
 /**
- * Transition giữa các scenes
+ * Shadow config cho elements
  */
+export interface ShadowConfig {
+  /** Màu shadow, ví dụ '#000000' hoặc 'rgba(0,0,0,0.5)' */
+  color: string;
+  /** Độ mờ shadow (px), mặc định 10 */
+  blur: number;
+  /** Offset X (px), mặc định 0 */
+  offsetX: number;
+  /** Offset Y (px), mặc định 0 */
+  offsetY: number;
+}
+
+/**
+ * Glow config cho text elements (hiệu ứng neon)
+ */
+export interface GlowConfig {
+  /** Màu glow, ví dụ '#00FF88' */
+  color: string;
+  /** Độ mờ glow (px), mặc định 10 */
+  blur: number;
+}
+
+/**
+ * Gradient config cho fill
+ */
+export interface GradientConfig {
+  /** Loại gradient */
+  type: 'linear' | 'radial';
+  /** Danh sách màu, ít nhất 2. Ví dụ: ['#FF0000', '#0000FF'] */
+  colors: string[];
+  /** Góc gradient (degrees), chỉ dùng cho linear. 0 = trái→phải, 90 = trên→dưới. Mặc định 0 */
+  angle?: number;
+}
+
+/**
+ * Transition giữa các scenes
+ *
+ * fade: standard crossfade
+ * slide: scene mới trượt vào từ 1 hướng
+ * wipe: scene mới xuất hiện dần từ 1 hướng (clip mask)
+ * zoom: scene cũ zoom in/out rồi biến mất
+ */
+export type TransitionType =
+  | 'fade'
+  | 'slideLeft' | 'slideRight' | 'slideUp' | 'slideDown'
+  | 'wipeLeft' | 'wipeRight' | 'wipeUp' | 'wipeDown'
+  | 'zoomIn' | 'zoomOut';
+
 export interface SceneTransition {
   /** Loại transition */
-  type: 'fade';
+  type: TransitionType;
   /** Thời lượng transition (giây) */
   duration: number;
 }
@@ -51,8 +113,14 @@ export interface ElementBase {
   offsetY?: number;
   /** Opacity 0-1, mặc định 1 */
   opacity?: number;
+  /** Scale factor, mặc định 1. Ví dụ: 1.5 = phóng to 150% */
+  scale?: number;
+  /** Góc xoay (degrees), mặc định 0. Ví dụ: 45 = xoay 45° theo chiều kim đồng hồ */
+  rotation?: number;
   /** Animation cho element */
   animation?: ElementAnimation;
+  /** Drop shadow cho element */
+  shadow?: ShadowConfig;
 }
 
 /**
@@ -72,6 +140,10 @@ export interface TextElement extends ElementBase {
   strokeWidth?: number;
   lineHeight?: number;
   padding?: number;
+  /** Glow effect (neon) — vẽ text nhiều lần với shadowBlur tăng dần */
+  glow?: GlowConfig;
+  /** Gradient fill cho text — thay thế solid color */
+  gradient?: GradientConfig;
 }
 
 /**
@@ -98,6 +170,39 @@ export interface VideoElement extends ElementBase {
   volume?: number;
   /** Bắt đầu chạy video từ giây thứ N (trim đầu), mặc định 0 */
   trimStart?: number;
+  /** Tốc độ phát video. 0.5 = slow-mo, 2 = fast forward, mặc định 1 */
+  speed?: number;
+}
+
+/**
+ * Shape types
+ */
+export type ShapeType = 'rectangle' | 'circle' | 'ellipse' | 'line';
+
+/**
+ * Shape element (rectangle, circle, ellipse, line)
+ */
+export interface ShapeElement extends ElementBase {
+  type: 'shape';
+  /** Loại shape, mặc định 'rectangle' */
+  shape?: ShapeType;
+  /** Chiều rộng (px) — dùng cho rectangle/ellipse, hoặc đường kính cho circle */
+  width: number;
+  /** Chiều cao (px) — dùng cho rectangle/ellipse, hoặc đường kính cho circle */
+  height: number;
+  /** Màu nền, mặc định transparent */
+  bgColor?: string;
+  /** Màu viền (stroke), mặc định không có viền */
+  strokeColor?: string;
+  /** Độ dày viền (px), mặc định 2 */
+  strokeWidth?: number;
+  /** Gradient fill — thay thế bgColor khi được set */
+  gradient?: GradientConfig;
+  /**
+   * Tọa độ đường line (chỉ dùng khi shape='line')
+   * x1,y1 → x2,y2 tương đối so với vị trí element
+   */
+  linePoints?: { x1: number; y1: number; x2: number; y2: number };
 }
 
 /**
@@ -141,7 +246,7 @@ export interface CaptionElement extends ElementBase {
   highlightScale?: number;
 }
 
-export type SceneElement = TextElement | ImageElement | VideoElement | CaptionElement;
+export type SceneElement = TextElement | ImageElement | VideoElement | CaptionElement | ShapeElement;
 
 /**
  * Audio config
@@ -166,6 +271,8 @@ export interface Scene {
   title?: string;
   duration: number;
   bgColor?: string;
+  /** Gradient background — thay thế bgColor khi được set */
+  bgGradient?: { colors: string[]; angle?: number };
   elements?: SceneElement[];
   audio?: AudioConfig;
   /** Transition vào scene (áp dụng ở đầu scene) */

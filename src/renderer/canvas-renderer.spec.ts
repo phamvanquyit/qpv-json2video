@@ -429,4 +429,103 @@ describe('CanvasRenderer', () => {
       renderer.cleanup();
     });
   });
+
+  // ========================
+  // Shape element
+  // ========================
+
+  describe('shape element', () => {
+    it('should render filled rectangle (bgColor only)', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 50, height: 30, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Check center pixel — should be red
+      const cx = 50, cy = 50;
+      const idx = (cy * 100 + cx) * 4;
+      expect(frame[idx]).toBe(255);     // R
+      expect(frame[idx + 1]).toBe(0);   // G
+      expect(frame[idx + 2]).toBe(0);   // B
+      renderer.cleanup();
+    });
+
+    it('should render stroke-only rectangle (photo frame)', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 80, height: 60, strokeColor: '#00ff00', strokeWidth: 4,
+          position: 'center' as const, zIndex: 1,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should remain black (no fill)
+      const cx = 50, cy = 50;
+      const idx = (cy * 100 + cx) * 4;
+      expect(frame[idx]).toBe(0);       // R — still black
+      expect(frame[idx + 1]).toBe(0);   // G
+      expect(frame[idx + 2]).toBe(0);   // B
+      renderer.cleanup();
+    });
+
+    it('should render shape with bgColor + strokeColor combined', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 60, height: 40,
+          bgColor: '#0000ff', strokeColor: '#ffffff', strokeWidth: 2,
+          position: 'center' as const, zIndex: 1,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should be blue (fill)
+      const cx = 50, cy = 50;
+      const idx = (cy * 100 + cx) * 4;
+      expect(frame[idx]).toBe(0);       // R
+      expect(frame[idx + 1]).toBe(0);   // G
+      expect(frame[idx + 2]).toBe(255); // B — blue fill
+      renderer.cleanup();
+    });
+
+    it('should render shape with border radius', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 50, height: 50, bgColor: '#ff00ff',
+          borderRadius: 10, position: 'center' as const, zIndex: 1,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render shape with opacity', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#ffffff',
+          opacity: 0.5, position: 'center' as const, zIndex: 1,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // With 50% opacity white on black, pixel should be ~128
+      const idx = (5 * 10 + 5) * 4;
+      expect(frame[idx]).toBeGreaterThan(100);
+      expect(frame[idx]).toBeLessThan(160);
+      renderer.cleanup();
+    });
+  });
 });

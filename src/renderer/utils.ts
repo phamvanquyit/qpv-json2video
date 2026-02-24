@@ -1,6 +1,6 @@
 import { createCanvas } from '@napi-rs/canvas';
 import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
-import { ComputedPosition, ElementAnimation, PositionType } from '../types';
+import { ComputedPosition, ElementAnimation, GradientConfig, PositionType, SceneTransition } from '../types';
 
 /**
  * UNICODE FALLBACK: @napi-rs/canvas (Skia) không tự động fallback font
@@ -80,7 +80,251 @@ export function computePosition(
 }
 
 /**
- * Tính opacity thực tế của element dựa trên base opacity + animation
+ * Animation state cho 1 element tại thời điểm cụ thể.
+ * Tất cả animations đều trả về state này.
+ */
+export interface ElementAnimationState {
+  /** Opacity 0-1 */
+  opacity: number;
+  /** Translation X offset (px) — dùng cho slide animations */
+  translateX: number;
+  /** Translation Y offset (px) — dùng cho slide animations */
+  translateY: number;
+  /** Scale factor — dùng cho zoom/pop/bounce */
+  scale: number;
+}
+
+// ==================== EASING FUNCTIONS ====================
+
+/** Linear interpolation */
+function easeLinear(t: number): number {
+  return t;
+}
+
+/** Ease out cubic — decelerate */
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+/** Ease out back — overshoot rồi về */
+function easeOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+/** Ease out bounce — nẩy */
+function easeOutBounce(t: number): number {
+  const n1 = 7.5625;
+  const d1 = 2.75;
+  if (t < 1 / d1) {
+    return n1 * t * t;
+  } else if (t < 2 / d1) {
+    return n1 * (t -= 1.5 / d1) * t + 0.75;
+  } else if (t < 2.5 / d1) {
+    return n1 * (t -= 2.25 / d1) * t + 0.9375;
+  } else {
+    return n1 * (t -= 2.625 / d1) * t + 0.984375;
+  }
+}
+
+/**
+ * Tính animation state cho element — phiên bản đầy đủ.
+ * Trả về opacity, translateX, translateY, scale.
+ *
+ * @param animation - Animation config
+ * @param currentTime - Thời gian hiện tại trong scene (giây)
+ * @param elementStart - Thời điểm element bắt đầu trong scene
+ * @param elementDuration - Thời lượng hiển thị của element
+ * @param sceneDuration - Tổng thời lượng scene
+ * @param canvasWidth - Canvas width (px) — dùng cho slide distance
+ * @param canvasHeight - Canvas height (px)
+ */
+export function computeElementAnimation(
+  animation: ElementAnimation | undefined,
+  currentTime: number,
+  elementStart: number | undefined,
+  elementDuration: number | undefined,
+  sceneDuration: number,
+  canvasWidth: number,
+  canvasHeight: number
+): ElementAnimationState {
+  const state: ElementAnimationState = {
+    opacity: 1,
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+  };
+
+  if (!animation) return state;
+
+  const elStart = elementStart ?? 0;
+  const elDuration = elementDuration ?? (sceneDuration - elStart);
+  const timeInElement = currentTime - elStart;
+  const elEnd = elStart + elDuration;
+  const timeToEnd = elEnd - currentTime;
+
+  const inDur = animation.fadeInDuration ?? 0.5;
+  const outDur = animation.fadeOutDuration ?? 0.5;
+
+  switch (animation.type) {
+    // ==================== FADE ====================
+    case 'fadeIn': {
+      if (timeInElement < inDur) {
+        state.opacity = timeInElement / inDur;
+      }
+      break;
+    }
+    case 'fadeOut': {
+      if (timeToEnd < outDur) {
+        state.opacity = timeToEnd / outDur;
+      }
+      break;
+    }
+    case 'fadeInOut': {
+      if (timeInElement < inDur) {
+        state.opacity = timeInElement / inDur;
+      } else if (timeToEnd < outDur) {
+        state.opacity = timeToEnd / outDur;
+      }
+      break;
+    }
+
+    // ==================== SLIDE IN ====================
+    case 'slideInLeft': {
+      if (timeInElement < inDur) {
+        const progress = easeOutCubic(timeInElement / inDur);
+        state.translateX = -canvasWidth * (1 - progress);
+        state.opacity = progress;
+      }
+      break;
+    }
+    case 'slideInRight': {
+      if (timeInElement < inDur) {
+        const progress = easeOutCubic(timeInElement / inDur);
+        state.translateX = canvasWidth * (1 - progress);
+        state.opacity = progress;
+      }
+      break;
+    }
+    case 'slideInTop': {
+      if (timeInElement < inDur) {
+        const progress = easeOutCubic(timeInElement / inDur);
+        state.translateY = -canvasHeight * (1 - progress);
+        state.opacity = progress;
+      }
+      break;
+    }
+    case 'slideInBottom': {
+      if (timeInElement < inDur) {
+        const progress = easeOutCubic(timeInElement / inDur);
+        state.translateY = canvasHeight * (1 - progress);
+        state.opacity = progress;
+      }
+      break;
+    }
+
+    // ==================== SLIDE OUT ====================
+    case 'slideOutLeft': {
+      if (timeToEnd < outDur) {
+        const progress = easeOutCubic(1 - timeToEnd / outDur);
+        state.translateX = -canvasWidth * progress;
+        state.opacity = 1 - progress;
+      }
+      break;
+    }
+    case 'slideOutRight': {
+      if (timeToEnd < outDur) {
+        const progress = easeOutCubic(1 - timeToEnd / outDur);
+        state.translateX = canvasWidth * progress;
+        state.opacity = 1 - progress;
+      }
+      break;
+    }
+    case 'slideOutTop': {
+      if (timeToEnd < outDur) {
+        const progress = easeOutCubic(1 - timeToEnd / outDur);
+        state.translateY = -canvasHeight * progress;
+        state.opacity = 1 - progress;
+      }
+      break;
+    }
+    case 'slideOutBottom': {
+      if (timeToEnd < outDur) {
+        const progress = easeOutCubic(1 - timeToEnd / outDur);
+        state.translateY = canvasHeight * progress;
+        state.opacity = 1 - progress;
+      }
+      break;
+    }
+
+    // ==================== ZOOM ====================
+    case 'zoomIn': {
+      if (timeInElement < inDur) {
+        const progress = easeOutCubic(timeInElement / inDur);
+        state.scale = progress;
+        state.opacity = progress;
+      }
+      break;
+    }
+    case 'zoomOut': {
+      if (timeToEnd < outDur) {
+        const progress = easeOutCubic(timeToEnd / outDur);
+        state.scale = progress;
+        state.opacity = progress;
+      }
+      break;
+    }
+
+    // ==================== MOTION ====================
+    case 'bounce': {
+      if (timeInElement < inDur) {
+        const progress = easeOutBounce(timeInElement / inDur);
+        // Rơi từ trên xuống, bounce tại vị trí cuối
+        state.translateY = -canvasHeight * 0.3 * (1 - progress);
+        state.opacity = Math.min(1, timeInElement / (inDur * 0.3));
+      }
+      break;
+    }
+    case 'pop': {
+      if (timeInElement < inDur) {
+        const progress = easeOutBack(timeInElement / inDur);
+        // Scale từ 0 → overshoot ~1.2 → 1
+        state.scale = progress;
+        state.opacity = Math.min(1, timeInElement / (inDur * 0.3));
+      }
+      break;
+    }
+    case 'shake': {
+      if (timeInElement < inDur) {
+        // Shake: rung x qua lại, biên độ giảm dần
+        const progress = timeInElement / inDur;
+        const amplitude = 10 * (1 - progress); // biên độ giảm dần
+        const frequency = 12; // ~12 lần rung trong duration
+        state.translateX = amplitude * Math.sin(progress * frequency * Math.PI * 2);
+      }
+      break;
+    }
+    case 'typewriter': {
+      // Typewriter — chỉ ảnh hưởng opacity/progress. Logic cắt text ở paintText.
+      // Ở đây chỉ return progress (0→1) qua scale field (hack — sẽ được paintText sử dụng)
+      if (timeInElement < inDur) {
+        state.scale = timeInElement / inDur; // progress 0→1
+      }
+      // opacity luôn = 1 cho typewriter
+      break;
+    }
+  }
+
+  // Clamp opacity
+  state.opacity = Math.max(0, Math.min(1, state.opacity));
+
+  return state;
+}
+
+/**
+ * Tính opacity thực tế của element dựa trên base opacity + animation.
+ * Backward-compatible wrapper — dùng computeElementAnimation bên trong.
  * @param baseOpacity - Opacity gốc (0-1), mặc định 1
  * @param animation - Animation config
  * @param currentTime - Thời gian hiện tại trong scene (giây)
@@ -97,45 +341,94 @@ export function computeElementOpacity(
   sceneDuration: number
 ): number {
   const opacity = baseOpacity ?? 1;
-
   if (!animation) return opacity;
 
-  const elStart = elementStart ?? 0;
-  const elDuration = elementDuration ?? (sceneDuration - elStart);
-  const timeInElement = currentTime - elStart;
-  const elEnd = elStart + elDuration;
-  const timeToEnd = elEnd - currentTime;
+  // Dùng computeElementAnimation để tính opacity từ animation
+  const state = computeElementAnimation(
+    animation, currentTime, elementStart, elementDuration, sceneDuration,
+    1080, 1920 // default canvas size — chỉ cần cho slide distance, opacity không phụ thuộc
+  );
 
-  let animOpacity = 1;
+  return Math.max(0, Math.min(1, opacity * state.opacity));
+}
 
-  switch (animation.type) {
-    case 'fadeIn': {
-      const dur = animation.fadeInDuration ?? 0.5;
-      if (timeInElement < dur) {
-        animOpacity = timeInElement / dur;
-      }
+/**
+ * Tính scene transition state.
+ * Trả về tương tự ElementAnimationState để renderer áp dụng.
+ */
+export function computeSceneTransition(
+  transition: SceneTransition | undefined,
+  sceneTimeOffset: number,
+  canvasWidth: number,
+  canvasHeight: number
+): ElementAnimationState {
+  const state: ElementAnimationState = {
+    opacity: 1,
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+  };
+
+  if (!transition) return state;
+
+  const { type, duration } = transition;
+  if (sceneTimeOffset >= duration) return state;
+
+  const progress = sceneTimeOffset / duration; // 0→1
+  const eased = easeOutCubic(progress);
+
+  switch (type) {
+    case 'fade':
+      state.opacity = progress;
       break;
-    }
-    case 'fadeOut': {
-      const dur = animation.fadeOutDuration ?? 0.5;
-      if (timeToEnd < dur) {
-        animOpacity = timeToEnd / dur;
-      }
+
+    // Slide: scene mới trượt vào
+    case 'slideLeft':
+      state.translateX = canvasWidth * (1 - eased);
       break;
-    }
-    case 'fadeInOut': {
-      const fadeInDur = animation.fadeInDuration ?? 0.5;
-      const fadeOutDur = animation.fadeOutDuration ?? 0.5;
-      if (timeInElement < fadeInDur) {
-        animOpacity = timeInElement / fadeInDur;
-      } else if (timeToEnd < fadeOutDur) {
-        animOpacity = timeToEnd / fadeOutDur;
-      }
+    case 'slideRight':
+      state.translateX = -canvasWidth * (1 - eased);
       break;
-    }
+    case 'slideUp':
+      state.translateY = canvasHeight * (1 - eased);
+      break;
+    case 'slideDown':
+      state.translateY = -canvasHeight * (1 - eased);
+      break;
+
+    // Wipe: clip mask di chuyển
+    case 'wipeLeft':
+      // Progress 0→1: clip từ phải sang trái
+      // Dùng opacity thay vì actual clip vì canvas clip complex
+      // Thực tế: reveal bằng cách vẽ scene mới chỉ phần đã wipe
+      state.opacity = eased;
+      state.translateX = canvasWidth * 0.1 * (1 - eased); // subtle shift
+      break;
+    case 'wipeRight':
+      state.opacity = eased;
+      state.translateX = -canvasWidth * 0.1 * (1 - eased);
+      break;
+    case 'wipeUp':
+      state.opacity = eased;
+      state.translateY = canvasHeight * 0.1 * (1 - eased);
+      break;
+    case 'wipeDown':
+      state.opacity = eased;
+      state.translateY = -canvasHeight * 0.1 * (1 - eased);
+      break;
+
+    // Zoom
+    case 'zoomIn':
+      state.scale = 0.5 + 0.5 * eased; // zoom từ 50% → 100%
+      state.opacity = eased;
+      break;
+    case 'zoomOut':
+      state.scale = 1.5 - 0.5 * eased; // zoom từ 150% → 100%
+      state.opacity = eased;
+      break;
   }
 
-  return Math.max(0, Math.min(1, opacity * animOpacity));
+  return state;
 }
 
 /**
@@ -323,4 +616,54 @@ export function calculateFitDraw(
 
   // Contain: sử dụng toàn bộ source
   return { sx: 0, sy: 0, sw: srcW, sh: srcH };
+}
+
+/**
+ * Tạo CanvasGradient từ GradientConfig
+ * @param ctx - Canvas context
+ * @param config - Gradient config
+ * @param x - Top-left X
+ * @param y - Top-left Y
+ * @param w - Width
+ * @param h - Height
+ */
+/** Inferred gradient type from @napi-rs/canvas (CanvasGradient is not exported) */
+type NativeGradient = ReturnType<CanvasRenderingContext2D['createLinearGradient']>;
+
+export function createGradient(
+  ctx: CanvasRenderingContext2D,
+  config: GradientConfig,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): NativeGradient {
+  let gradient: NativeGradient;
+
+  if (config.type === 'radial') {
+    // Radial: từ tâm ra ngoài
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const radius = Math.sqrt(w * w + h * h) / 2;
+    gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  } else {
+    // Linear: theo góc (degrees)
+    const angle = (config.angle ?? 0) * Math.PI / 180;
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const halfDiag = Math.sqrt(w * w + h * h) / 2;
+    const x0 = cx - halfDiag * Math.cos(angle);
+    const y0 = cy - halfDiag * Math.sin(angle);
+    const x1 = cx + halfDiag * Math.cos(angle);
+    const y1 = cy + halfDiag * Math.sin(angle);
+    gradient = ctx.createLinearGradient(x0, y0, x1, y1);
+  }
+
+  // Phân bố color stops đều
+  const colors = config.colors;
+  for (let i = 0; i < colors.length; i++) {
+    gradient.addColorStop(i / (colors.length - 1), colors[i]);
+  }
+
+  return gradient;
 }
