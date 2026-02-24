@@ -106,6 +106,13 @@ export interface VideoElement extends ElementBase {
 export type WordHighlightStyle = 'color' | 'background' | 'scale';
 
 /**
+ * Caption display mode
+ * - 'sentence': hiển thị cả câu (mặc định)
+ * - 'word': hiển thị từng từ một (giống CapCut)
+ */
+export type CaptionDisplayMode = 'sentence' | 'word';
+
+/**
  * Caption element (subtitle)
  */
 export interface CaptionElement extends ElementBase {
@@ -120,7 +127,9 @@ export interface CaptionElement extends ElementBase {
   maxWidth?: string;
   lineHeight?: number;
   textAlign?: 'left' | 'center' | 'right';
-  /** Bật word-level highlight (karaoke-style), mặc định false */
+  /** Chế độ hiển thị: 'sentence' (cả câu, mặc định) hoặc 'word' (từng từ một kiểu CapCut) */
+  displayMode?: CaptionDisplayMode;
+  /** Bật word-level highlight (karaoke-style), mặc định false. Chỉ dùng khi displayMode='sentence' */
   wordHighlight?: boolean;
   /** Màu highlight cho từ đang active, mặc định '#FFD700' (vàng) */
   highlightColor?: string;

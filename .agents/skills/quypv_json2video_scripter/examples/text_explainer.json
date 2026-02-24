@@ -1,0 +1,254 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 6,
+          "bgColor": "#0f0c29"
+        },
+        {
+          "duration": 8,
+          "bgColor": "#1a1a2e",
+          "transition": {
+            "type": "fade",
+            "duration": 1
+          }
+        },
+        {
+          "duration": 8,
+          "bgColor": "#16213e",
+          "transition": {
+            "type": "fade",
+            "duration": 1
+          }
+        },
+        {
+          "duration": 6,
+          "bgColor": "#0f0c29",
+          "transition": {
+            "type": "fade",
+            "duration": 1
+          }
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "zIndex": 1,
+      "scenes": [
+        {
+          "duration": 6,
+          "elements": [
+            {
+              "type": "text",
+              "text": "DID YOU\nKNOW? 🤔",
+              "fontFamily": "Bebas Neue",
+              "fontSize": 96,
+              "color": "#FFFFFF",
+              "textAlign": "center",
+              "position": "center",
+              "zIndex": 1,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 1
+              }
+            }
+          ]
+        },
+        {
+          "duration": 8,
+          "elements": [
+            {
+              "type": "text",
+              "text": "FACT #1",
+              "fontFamily": "Orbitron",
+              "fontSize": 48,
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "position": "top-center",
+              "zIndex": 1,
+              "offsetY": 300,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            },
+            {
+              "type": "text",
+              "text": "The human brain processes images 60,000 times faster than text.",
+              "fontFamily": "Poppins",
+              "fontSize": 44,
+              "color": "#FFFFFF",
+              "textAlign": "center",
+              "maxWidth": "80%",
+              "lineHeight": 1.5,
+              "position": "center",
+              "zIndex": 1,
+              "start": 0.5,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "That's why video content is so powerful! 🚀",
+              "fontFamily": "Poppins",
+              "fontSize": 32,
+              "color": "rgba(255,255,255,0.7)",
+              "textAlign": "center",
+              "maxWidth": "75%",
+              "position": "center",
+              "zIndex": 0,
+              "offsetY": 200,
+              "start": 3,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            }
+          ]
+        },
+        {
+          "duration": 8,
+          "elements": [
+            {
+              "type": "text",
+              "text": "FACT #2",
+              "fontFamily": "Orbitron",
+              "fontSize": 48,
+              "fontWeight": "bold",
+              "color": "#00E5FF",
+              "position": "top-center",
+              "zIndex": 1,
+              "offsetY": 300,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            },
+            {
+              "type": "text",
+              "text": "90% of information transmitted to the brain is visual.",
+              "fontFamily": "Poppins",
+              "fontSize": 44,
+              "color": "#FFFFFF",
+              "textAlign": "center",
+              "maxWidth": "80%",
+              "lineHeight": 1.5,
+              "position": "center",
+              "zIndex": 1,
+              "start": 0.5,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "Make your content visual! 🎨",
+              "fontFamily": "Poppins",
+              "fontSize": 32,
+              "color": "rgba(255,255,255,0.7)",
+              "textAlign": "center",
+              "maxWidth": "75%",
+              "position": "center",
+              "zIndex": 0,
+              "offsetY": 200,
+              "start": 3,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            }
+          ]
+        },
+        {
+          "duration": 6,
+          "elements": [
+            {
+              "type": "text",
+              "text": "FOLLOW\nFOR MORE",
+              "fontFamily": "Bebas Neue",
+              "fontSize": 96,
+              "color": "#FFD700",
+              "textAlign": "center",
+              "position": "center",
+              "zIndex": 1,
+              "offsetY": -50,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "@yourhandle",
+              "fontFamily": "Poppins",
+              "fontSize": 40,
+              "color": "rgba(255,255,255,0.6)",
+              "textAlign": "center",
+              "position": "center",
+              "zIndex": 0,
+              "offsetY": 100,
+              "start": 1,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "zIndex": 2,
+      "scenes": [
+        {
+          "duration": 28,
+          "elements": [
+            {
+              "type": "caption",
+              "srtContent": "1\n00:00:01,000 --> 00:00:04,000\nDid you know these amazing facts?\n\n2\n00:00:06,500 --> 00:00:10,000\nThe brain processes images sixty thousand times faster\n\n3\n00:00:10,500 --> 00:00:13,000\nThat is why video is so powerful\n\n4\n00:00:14,500 --> 00:00:18,000\nNinety percent of information is visual\n\n5\n00:00:18,500 --> 00:00:21,000\nMake your content visual\n\n6\n00:00:22,500 --> 00:00:25,000\nFollow for more tips",
+              "fontFamily": "Nunito",
+              "fontSize": 36,
+              "color": "#FFFFFF",
+              "strokeColor": "#000000",
+              "strokeWidth": 3,
+              "maxWidth": "85%",
+              "textAlign": "center",
+              "position": "bottom-center",
+              "zIndex": 10,
+              "offsetY": -100,
+              "wordHighlight": true,
+              "highlightStyle": "background",
+              "highlightColor": "#FFD700",
+              "highlightBgColor": "rgba(255,215,0,0.3)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "audio",
+      "scenes": [
+        {
+          "duration": 28,
+          "audio": {
+            "url": "https://example.com/chill-ambient.mp3",
+            "volume": 0.2,
+            "fadeIn": 2,
+            "fadeOut": 3,
+            "loop": true
+          }
+        }
+      ]
+    }
+  ]
+}

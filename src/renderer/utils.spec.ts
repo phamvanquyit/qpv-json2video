@@ -5,115 +5,67 @@ import { createCanvas } from '@napi-rs/canvas';
 // computePosition
 // ============================================================
 describe('computePosition', () => {
-  const canvasW = 1080;
-  const canvasH = 1920;
-  const elW = 200;
-  const elH = 100;
+  const W = 1080, H = 1920, elW = 200, elH = 100;
 
-  // --- 9 position types ---
-  it('center: should center both axes', () => {
-    const pos = computePosition('center', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(440);
-    expect(pos.y).toBe(910);
+  it.each([
+    ['center',        440,  910],
+    ['top-left',      0,    0],
+    ['top-center',    440,  0],
+    ['top-right',     880,  0],
+    ['left',          0,    910],
+    ['right',         880,  910],
+    ['bottom-left',   0,    1820],
+    ['bottom-center', 440,  1820],
+    ['bottom-right',  880,  1820],
+  ] as const)('%s → (%d, %d)', (position, expectedX, expectedY) => {
+    const pos = computePosition(position, W, H, elW, elH);
+    expect(pos.x).toBe(expectedX);
+    expect(pos.y).toBe(expectedY);
   });
 
-  it('top-left: should be at origin', () => {
-    const pos = computePosition('top-left', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(0);
-    expect(pos.y).toBe(0);
-  });
-
-  it('top-center: should center X, Y=0', () => {
-    const pos = computePosition('top-center', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(440);
-    expect(pos.y).toBe(0);
-  });
-
-  it('top-right: should align right, Y=0', () => {
-    const pos = computePosition('top-right', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(880);
-    expect(pos.y).toBe(0);
-  });
-
-  it('left: should be X=0, center Y', () => {
-    const pos = computePosition('left', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(0);
-    expect(pos.y).toBe(910);
-  });
-
-  it('right: should align right, center Y', () => {
-    const pos = computePosition('right', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(880);
-    expect(pos.y).toBe(910);
-  });
-
-  it('bottom-left: should be X=0, Y at bottom', () => {
-    const pos = computePosition('bottom-left', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(0);
-    expect(pos.y).toBe(1820);
-  });
-
-  it('bottom-center: should center X, Y at bottom', () => {
-    const pos = computePosition('bottom-center', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(440);
-    expect(pos.y).toBe(1820);
-  });
-
-  it('bottom-right: should align right and bottom', () => {
-    const pos = computePosition('bottom-right', canvasW, canvasH, elW, elH);
-    expect(pos.x).toBe(880);
-    expect(pos.y).toBe(1820);
-  });
-
-  // --- offset ---
   it('should apply positive offsets', () => {
-    const pos = computePosition('center', canvasW, canvasH, elW, elH, 10, 20);
+    const pos = computePosition('center', W, H, elW, elH, 10, 20);
     expect(pos.x).toBe(450);
     expect(pos.y).toBe(930);
   });
 
   it('should apply negative offsets', () => {
-    const pos = computePosition('center', canvasW, canvasH, elW, elH, -50, -100);
+    const pos = computePosition('center', W, H, elW, elH, -50, -100);
     expect(pos.x).toBe(390);
     expect(pos.y).toBe(810);
   });
 
   it('should default offsets to 0', () => {
-    const pos1 = computePosition('center', canvasW, canvasH, elW, elH);
-    const pos2 = computePosition('center', canvasW, canvasH, elW, elH, 0, 0);
-    expect(pos1).toEqual(pos2);
+    const a = computePosition('center', W, H, elW, elH);
+    const b = computePosition('center', W, H, elW, elH, 0, 0);
+    expect(a).toEqual(b);
   });
 
-  // --- edge cases ---
   it('should handle element same size as canvas', () => {
     const pos = computePosition('center', 1080, 1920, 1080, 1920);
-    expect(pos.x).toBe(0);
-    expect(pos.y).toBe(0);
+    expect(pos).toEqual({ x: 0, y: 0 });
   });
 
   it('should handle element larger than canvas', () => {
     const pos = computePosition('center', 100, 100, 200, 200);
-    expect(pos.x).toBe(-50);
-    expect(pos.y).toBe(-50);
+    expect(pos).toEqual({ x: -50, y: -50 });
   });
 
   it('should handle zero-size element', () => {
     const pos = computePosition('center', 1080, 1920, 0, 0);
-    expect(pos.x).toBe(540);
-    expect(pos.y).toBe(960);
+    expect(pos).toEqual({ x: 540, y: 960 });
   });
 
-  it('should combine offset with all positions', () => {
+  it('should add offset consistently for all positions', () => {
     const positions = [
       'center', 'top-left', 'top-center', 'top-right',
       'left', 'right', 'bottom-left', 'bottom-center', 'bottom-right',
     ] as const;
-
-    for (const position of positions) {
-      const withoutOffset = computePosition(position, canvasW, canvasH, elW, elH, 0, 0);
-      const withOffset = computePosition(position, canvasW, canvasH, elW, elH, 100, 200);
-      expect(withOffset.x).toBe(withoutOffset.x + 100);
-      expect(withOffset.y).toBe(withoutOffset.y + 200);
+    for (const p of positions) {
+      const base = computePosition(p, W, H, elW, elH, 0, 0);
+      const offset = computePosition(p, W, H, elW, elH, 100, 200);
+      expect(offset.x).toBe(base.x + 100);
+      expect(offset.y).toBe(base.y + 200);
     }
   });
 });
@@ -122,27 +74,19 @@ describe('computePosition', () => {
 // computeElementOpacity
 // ============================================================
 describe('computeElementOpacity', () => {
-  it('should return 1 when no animation and no base opacity', () => {
+  it('should return 1 with no animation and no base opacity', () => {
     expect(computeElementOpacity(undefined, undefined, 0, 0, 5, 5)).toBe(1);
   });
 
-  it('should return base opacity when no animation', () => {
+  it('should return base opacity with no animation', () => {
     expect(computeElementOpacity(0.5, undefined, 0, 0, 5, 5)).toBe(0.5);
   });
 
-  // --- fadeIn ---
-  it('fadeIn: should be 0 at start', () => {
+  // fadeIn
+  it('fadeIn: 0 at start, 0.5 at mid, 1 after fade', () => {
     const anim = { type: 'fadeIn' as const, fadeInDuration: 1.0 };
     expect(computeElementOpacity(1, anim, 0, 0, 5, 5)).toBe(0);
-  });
-
-  it('fadeIn: should be 0.5 at half fade', () => {
-    const anim = { type: 'fadeIn' as const, fadeInDuration: 1.0 };
     expect(computeElementOpacity(1, anim, 0.5, 0, 5, 5)).toBeCloseTo(0.5);
-  });
-
-  it('fadeIn: should be 1 after fade', () => {
-    const anim = { type: 'fadeIn' as const, fadeInDuration: 1.0 };
     expect(computeElementOpacity(1, anim, 1.5, 0, 5, 5)).toBe(1);
   });
 
@@ -151,39 +95,22 @@ describe('computeElementOpacity', () => {
     expect(computeElementOpacity(0.5, anim, 0.5, 0, 5, 5)).toBeCloseTo(0.25);
   });
 
-  // --- fadeOut ---
-  it('fadeOut: should be 1 at start', () => {
+  // fadeOut
+  it('fadeOut: 1 at start, 0.5 near end, 0 at end', () => {
     const anim = { type: 'fadeOut' as const, fadeOutDuration: 1.0 };
     expect(computeElementOpacity(1, anim, 0, 0, 5, 5)).toBe(1);
-  });
-
-  it('fadeOut: should be 0.5 at half before end', () => {
-    const anim = { type: 'fadeOut' as const, fadeOutDuration: 1.0 };
     expect(computeElementOpacity(1, anim, 4.5, 0, 5, 5)).toBeCloseTo(0.5);
-  });
-
-  it('fadeOut: should be 0 at end', () => {
-    const anim = { type: 'fadeOut' as const, fadeOutDuration: 1.0 };
     expect(computeElementOpacity(1, anim, 5, 0, 5, 5)).toBe(0);
   });
 
-  // --- fadeInOut ---
-  it('fadeInOut: should fade in at start', () => {
+  // fadeInOut
+  it('fadeInOut: fade in, full, fade out', () => {
     const anim = { type: 'fadeInOut' as const, fadeInDuration: 1, fadeOutDuration: 1 };
-    expect(computeElementOpacity(1, anim, 0.5, 0, 5, 5)).toBeCloseTo(0.5);
+    expect(computeElementOpacity(1, anim, 0.5, 0, 5, 5)).toBeCloseTo(0.5); // fade in
+    expect(computeElementOpacity(1, anim, 2.5, 0, 5, 5)).toBe(1);          // full
+    expect(computeElementOpacity(1, anim, 4.5, 0, 5, 5)).toBeCloseTo(0.5); // fade out
   });
 
-  it('fadeInOut: should be 1 in middle', () => {
-    const anim = { type: 'fadeInOut' as const, fadeInDuration: 1, fadeOutDuration: 1 };
-    expect(computeElementOpacity(1, anim, 2.5, 0, 5, 5)).toBe(1);
-  });
-
-  it('fadeInOut: should fade out at end', () => {
-    const anim = { type: 'fadeInOut' as const, fadeInDuration: 1, fadeOutDuration: 1 };
-    expect(computeElementOpacity(1, anim, 4.5, 0, 5, 5)).toBeCloseTo(0.5);
-  });
-
-  // --- with element start ---
   it('should handle element start offset', () => {
     const anim = { type: 'fadeIn' as const, fadeInDuration: 1.0 };
     expect(computeElementOpacity(1, anim, 2, 2, 3, 5)).toBe(0);
@@ -191,7 +118,7 @@ describe('computeElementOpacity', () => {
     expect(computeElementOpacity(1, anim, 3.5, 2, 3, 5)).toBe(1);
   });
 
-  it('should use default 0.5s fade duration', () => {
+  it('should default to 0.5s fade duration', () => {
     const anim = { type: 'fadeIn' as const };
     expect(computeElementOpacity(1, anim, 0.25, 0, 5, 5)).toBeCloseTo(0.5);
   });
@@ -230,11 +157,8 @@ describe('isElementVisible', () => {
     expect(isElementVisible(999, 0, undefined, undefined)).toBe(true);
   });
 
-  it('should be visible exactly at element end (inclusive)', () => {
+  it('should be visible at element end (inclusive), not past', () => {
     expect(isElementVisible(5, 0, 5)).toBe(true);
-  });
-
-  it('should NOT be visible just past end', () => {
     expect(isElementVisible(5.01, 0, 5)).toBe(false);
   });
 
@@ -269,15 +193,10 @@ describe('normalizeFontWeight', () => {
     expect(normalizeFontWeight('700')).toBe(700);
   });
 
-  it('should map named weights', () => {
-    expect(normalizeFontWeight('bold')).toBe(700);
-    expect(normalizeFontWeight('normal')).toBe(400);
-    expect(normalizeFontWeight('thin')).toBe(100);
-  });
-
-  it('should be case-insensitive', () => {
-    expect(normalizeFontWeight('Bold')).toBe(700);
-    expect(normalizeFontWeight('BOLD')).toBe(700);
+  it.each([
+    ['bold', 700], ['normal', 400], ['thin', 100], ['Bold', 700], ['BOLD', 700],
+  ])('should map "%s" → %d', (name, expected) => {
+    expect(normalizeFontWeight(name)).toBe(expected);
   });
 
   it('should default unknown to 400', () => {
@@ -337,8 +256,7 @@ describe('measureTextBlock', () => {
 
   it('should calculate correct height for single line', () => {
     const result = measureTextBlock('Hi', 24, 'sans-serif', 400, 500, 1.3);
-    // Single line: height = fontSize (no lineHeight spacing below)
-    expect(result.height).toBe(24);
+    expect(result.height).toBe(24); // single line = fontSize only
   });
 
   it('should respect different font sizes', () => {

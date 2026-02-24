@@ -1,5 +1,5 @@
 import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
-import { CaptionElement, WordHighlightStyle } from '../../types';
+import { CaptionElement, CaptionDisplayMode, WordHighlightStyle } from '../../types';
 import { computePosition, buildFontString, roundRectPath, wrapText } from '../utils';
 
 interface SrtEntry {
@@ -234,7 +234,6 @@ export function paintCaption(
     color = '#FFFFFF',
     strokeColor = '#000000',
     strokeWidth = 4,
-    backgroundColor = 'rgba(0, 0, 0, 0.8)',
     position = 'bottom-center',
     maxWidth = '90%',
     lineHeight = 1.3,
@@ -244,6 +243,8 @@ export function paintCaption(
     borderRadius = 12,
     start = 0,
     opacity = 1,
+    // Display mode
+    displayMode = 'sentence' as CaptionDisplayMode,
     // Word highlight options
     wordHighlight = false,
     highlightColor = '#FFD700',
@@ -251,6 +252,10 @@ export function paintCaption(
     highlightStyle = 'color' as WordHighlightStyle,
     highlightScale = 1.15,
   } = element;
+
+  // Word mode mặc định không có background, sentence mode mặc định có
+  const backgroundColor = element.backgroundColor ??
+    (displayMode === 'word' ? '' : 'rgba(0, 0, 0, 0.8)');
 
   if (!srtContent?.trim()) return;
 
@@ -280,21 +285,30 @@ export function paintCaption(
     ctx.globalAlpha = opacity;
   }
 
-  if (!wordHighlight) {
-    // ===== LEGACY MODE: vẽ cả câu (không highlight từ) =====
-    paintSentenceMode(ctx, activeEntry.text, {
+  if (displayMode === 'word') {
+    // ===== WORD-BY-WORD MODE (CapCut style): chỉ hiện 1 từ mỗi lần =====
+    const wordTimings = distributeWordTimings(activeEntry);
+    paintWordByWordMode(ctx, wordTimings, currentTimeMs, {
       fontFamily, fontSize, color, strokeColor, strokeWidth,
       backgroundColor, position, textAlign, offsetX, offsetY,
       borderRadius, padding, innerMaxWidth, canvasWidth, canvasHeight, lineHeight,
+      highlightColor, highlightBgColor, highlightStyle, highlightScale,
     });
-  } else {
-    // ===== WORD HIGHLIGHT MODE =====
+  } else if (wordHighlight) {
+    // ===== WORD HIGHLIGHT MODE (karaoke) =====
     const wordTimings = distributeWordTimings(activeEntry);
     paintWordHighlightMode(ctx, wordTimings, currentTimeMs, {
       fontFamily, fontSize, color, strokeColor, strokeWidth,
       backgroundColor, position, textAlign, offsetX, offsetY,
       borderRadius, padding, innerMaxWidth, canvasWidth, canvasHeight, lineHeight,
       highlightColor, highlightBgColor, highlightStyle, highlightScale,
+    });
+  } else {
+    // ===== SENTENCE MODE (default): vẽ cả câu =====
+    paintSentenceMode(ctx, activeEntry.text, {
+      fontFamily, fontSize, color, strokeColor, strokeWidth,
+      backgroundColor, position, textAlign, offsetX, offsetY,
+      borderRadius, padding, innerMaxWidth, canvasWidth, canvasHeight, lineHeight,
     });
   }
 
@@ -490,6 +504,102 @@ function paintWordHighlightMode(
       cursorX += wordWidth;
     }
   }
+}
+
+// ==================== WORD-BY-WORD MODE (CapCut style) ====================
+
+/**
+ * Chỉ hiển thị 1 từ tại thời điểm — giống CapCut word-by-word effect.
+ * Từ active được hiển thị ở giữa với optional scale animation.
+ */
+function paintWordByWordMode(
+  ctx: CanvasRenderingContext2D,
+  wordTimings: WordTiming[],
+  currentTimeMs: number,
+  opts: WordHighlightOptions
+): void {
+  // Binary search tìm từ active
+  let activeWordIndex = -1;
+  {
+    let lo = 0, hi = wordTimings.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      if (currentTimeMs < wordTimings[mid].startMs) {
+        hi = mid - 1;
+      } else if (currentTimeMs >= wordTimings[mid].endMs) {
+        lo = mid + 1;
+      } else {
+        activeWordIndex = mid;
+        break;
+      }
+    }
+  }
+
+  if (activeWordIndex < 0) return;
+
+  const activeWord = wordTimings[activeWordIndex];
+  const word = activeWord.word;
+
+  ctx.font = buildFontString(700, opts.fontSize, opts.fontFamily);
+  ctx.textBaseline = 'top';
+
+  const wordWidth = ctx.measureText(word).width;
+
+  const blockWidth = wordWidth + opts.padding * 2;
+  const blockHeight = opts.fontSize + opts.padding * 2;
+
+  const pos = computePosition(
+    opts.position as any, opts.canvasWidth, opts.canvasHeight,
+    blockWidth, blockHeight, opts.offsetX, opts.offsetY
+  );
+
+  // Tính progress trong từ (0→1) để tạo pop-in animation
+  const wordDuration = activeWord.endMs - activeWord.startMs;
+  const elapsed = currentTimeMs - activeWord.startMs;
+  const progress = Math.min(elapsed / Math.min(wordDuration, 150), 1); // pop-in trong 150ms
+
+  // Scale animation: bắt đầu từ 0.7 → 1.0 (pop-in effect)
+  const animScale = 0.7 + 0.3 * easeOutBack(progress);
+
+  const textX = pos.x + opts.padding;
+  const textY = pos.y + opts.padding;
+  const centerX = pos.x + blockWidth / 2;
+  const centerY = pos.y + blockHeight / 2;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.scale(animScale, animScale);
+  ctx.translate(-centerX, -centerY);
+
+  // Background
+  drawBackground(ctx, pos.x, pos.y, blockWidth, blockHeight, opts.backgroundColor, opts.borderRadius);
+
+  // Chọn màu dựa trên highlightStyle
+  const wordColor = opts.highlightStyle === 'color' || opts.highlightStyle === 'background'
+    ? opts.highlightColor
+    : opts.color;
+
+  if (opts.highlightStyle === 'background') {
+    // Vẽ highlight background cho từ
+    const hPad = 4;
+    const vPad = 2;
+    ctx.fillStyle = opts.highlightBgColor;
+    roundRectPath(ctx, textX - hPad, textY - vPad, wordWidth + hPad * 2, opts.fontSize + vPad * 2, 6);
+    ctx.fill();
+  }
+
+  drawTextWithStroke(ctx, word, textX, textY, wordColor, opts.strokeColor, opts.strokeWidth);
+
+  ctx.restore();
+}
+
+/**
+ * Easing function: ease-out-back cho pop-in effect mượt
+ */
+function easeOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
 /**
