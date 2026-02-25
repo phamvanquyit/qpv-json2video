@@ -73,8 +73,18 @@ describe('json2video', () => {
         .rejects.toThrow('width và height');
     });
 
-    it.each([0])('should throw if width is %p', async (w) => {
+    it.each([0, -1, -100])('should throw if width is %p', async (w) => {
       await expect(json2video({ width: w, height: 1920, scenes: [{ duration: 1 }] }))
+        .rejects.toThrow();
+    });
+
+    it.each([0, -1, -100])('should throw if height is %p', async (h) => {
+      await expect(json2video({ width: 1080, height: h, scenes: [{ duration: 1 }] }))
+        .rejects.toThrow();
+    });
+
+    it('should throw if width is NaN string', async () => {
+      await expect(json2video({ width: 'abc', height: 1920, scenes: [{ duration: 1 }] }))
         .rejects.toThrow();
     });
 
@@ -111,7 +121,8 @@ describe('json2video', () => {
   // ========================
 
   describe('URL validation', () => {
-    it.each(['ftp://bad.com/img.png', '/local/img.png'])(
+    // Invalid URLs: ftp://, relative paths without ./ prefix
+    it.each(['ftp://bad.com/img.png', 'images/my.png'])(
       'should throw for image with invalid URL: %s',
       async (url) => {
         await expect(json2video({
@@ -120,7 +131,7 @@ describe('json2video', () => {
             duration: 1,
             elements: [{ type: 'image', url, width: 100, height: 100, position: 'center', zIndex: 0 }],
           }],
-        })).rejects.toThrow('URL phải bắt đầu bằng http://');
+        })).rejects.toThrow('URL không hợp lệ');
       }
     );
 
@@ -133,17 +144,17 @@ describe('json2video', () => {
             duration: 1,
             elements: [{ type: 'video', url, width: 100, height: 100, position: 'center', zIndex: 0 }],
           }],
-        })).rejects.toThrow('URL phải bắt đầu bằng http://');
+        })).rejects.toThrow('URL không hợp lệ');
       }
     );
 
-    it.each(['file:///bad/audio.mp3', 'audio/file.mp3'])(
+    it.each(['ftp://bad/audio.mp3', 'audio/file.mp3'])(
       'should throw for audio with invalid URL: %s',
       async (url) => {
         await expect(json2video({
           width: 1080, height: 1920,
           scenes: [{ duration: 1, audio: { url } }],
-        })).rejects.toThrow('Audio URL phải bắt đầu bằng http://');
+        })).rejects.toThrow('URL không hợp lệ');
       }
     );
 
@@ -151,6 +162,10 @@ describe('json2video', () => {
       { type: 'image', url: 'http://example.com/img.png', width: 100, height: 100, position: 'center', zIndex: 0 },
       { type: 'image', url: 'https://example.com/img.png', width: 100, height: 100, position: 'center', zIndex: 0 },
       { type: 'video', url: 'https://example.com/vid.mp4', width: 100, height: 100, position: 'center', zIndex: 0 },
+      { type: 'image', url: 'file:///path/to/img.png', width: 100, height: 100, position: 'center', zIndex: 0 },
+      { type: 'image', url: './local/img.png', width: 100, height: 100, position: 'center', zIndex: 0 },
+      { type: 'image', url: '/absolute/path/img.png', width: 100, height: 100, position: 'center', zIndex: 0 },
+      { type: 'image', url: '../parent/img.png', width: 100, height: 100, position: 'center', zIndex: 0 },
     ])('should accept valid $type URL', async (element) => {
       const result = await json2video({
         width: 1080, height: 1920,
@@ -343,7 +358,7 @@ describe('json2video', () => {
         getAssetLoader: jest.fn().mockReturnValue({}),
         cleanup: jest.fn(),
       }));
-      await expect(json2video(validConfig)).rejects.toThrow('Lỗi khi render video: custom error');
+      await expect(json2video(validConfig)).rejects.toThrow(/Lỗi khi render video:.*custom error/);
     });
   });
 
@@ -591,5 +606,54 @@ describe('json2videoFile', () => {
   it('should throw for invalid config', async () => {
     const outputPath = path.join(os.tmpdir(), `j2v-invalid-${Date.now()}.mp4`);
     await expect(json2videoFile(null, outputPath)).rejects.toThrow('videoConfig không được để trống');
+  });
+});
+
+// ================================================================
+// Additional edge cases
+// ================================================================
+describe('json2video — extra edge cases', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('should handle tracks with scenes containing audio arrays', async () => {
+    const result = await json2video({
+      width: 1080, height: 1920,
+      tracks: [
+        { type: 'video', zIndex: 0, scenes: [{ duration: 3, bgColor: '#000' }] },
+        {
+          type: 'audio', scenes: [{
+            duration: 3,
+            audio: [
+              { url: 'https://example.com/bgm.mp3', volume: 0.3 },
+              { url: 'https://example.com/sfx.mp3', volume: 1.0, start: 1 },
+            ],
+          }],
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject ../relative path for audio URL that are not valid', async () => {
+    // ../relative paths ARE valid, this tests acceptance
+    const result = await json2video({
+      width: 1080, height: 1920,
+      scenes: [{ duration: 1, audio: { url: '../parent/audio.mp3' } }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should handle very large number of scenes', async () => {
+    const scenes = Array.from({ length: 50 }, (_, i) => ({
+      duration: 0.1,
+      bgColor: `#${(i * 5).toString(16).padStart(2, '0')}0000`,
+    }));
+    const result = await json2video({ width: 1080, height: 1920, scenes });
+    expect(result.success).toBe(true);
+  });
+
+  it('should handle fractional fps', async () => {
+    const result = await json2video({ width: 1080, height: 1920, fps: 29.97, scenes: [{ duration: 1 }] });
+    expect(result.success).toBe(true);
   });
 });

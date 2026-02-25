@@ -1,4 +1,4 @@
-import { computeElementOpacity, computeElementAnimation, computeSceneTransition, computePosition, isElementVisible, measureTextBlock, normalizeFontWeight, wrapText } from './utils';
+import { buildFontString, calculateFitDraw, clearMeasureCache, computeElementOpacity, computeElementAnimation, computeSceneTransition, computePosition, createGradient, isElementVisible, measureTextBlock, normalizeFontWeight, roundRectPath, wrapText } from './utils';
 import { createCanvas } from '@napi-rs/canvas';
 import { ElementAnimation } from '../types';
 
@@ -629,5 +629,210 @@ describe('computeSceneTransition', () => {
       const s = computeSceneTransition({ type: 'zoomOut', duration: 1 }, 1, W, H);
       expect(s.scale).toBe(1);
     });
+  });
+});
+
+// ============================================================
+// buildFontString
+// ============================================================
+describe('buildFontString', () => {
+  it('should include weight, fontSize, fontFamily', () => {
+    const result = buildFontString(700, 48, 'Orbitron');
+    expect(result).toContain('700');
+    expect(result).toContain('48px');
+    expect(result).toContain('"Orbitron"');
+  });
+
+  it('should include Unicode fallback fonts', () => {
+    const result = buildFontString(400, 24, 'Arial');
+    expect(result).toContain('Arial Unicode MS');
+    expect(result).toContain('sans-serif');
+  });
+
+  it('should handle string weight', () => {
+    const result = buildFontString('bold', 32, 'Inter');
+    expect(result.startsWith('bold 32px')).toBe(true);
+  });
+
+  it('should wrap fontFamily in quotes', () => {
+    const result = buildFontString(400, 16, 'Noto Sans');
+    expect(result).toContain('"Noto Sans"');
+  });
+
+  it('should produce consistent output', () => {
+    const a = buildFontString(400, 24, 'Roboto');
+    const b = buildFontString(400, 24, 'Roboto');
+    expect(a).toBe(b);
+  });
+});
+
+// ============================================================
+// calculateFitDraw
+// ============================================================
+describe('calculateFitDraw', () => {
+  // Fill mode — use entire source
+  it('fill: should return full source rect', () => {
+    const r = calculateFitDraw(1920, 1080, 640, 480, 'fill');
+    expect(r).toEqual({ sx: 0, sy: 0, sw: 1920, sh: 1080 });
+  });
+
+  // Contain mode — use entire source
+  it('contain: should return full source rect', () => {
+    const r = calculateFitDraw(1920, 1080, 640, 480, 'contain');
+    expect(r).toEqual({ sx: 0, sy: 0, sw: 1920, sh: 1080 });
+  });
+
+  // Cover mode — crop source to match destination aspect ratio
+  describe('cover', () => {
+    it('should crop width when source is wider', () => {
+      // src 1920x1080 (16:9) → dst 480x480 (1:1)
+      // srcRatio (1.78) > dstRatio (1) → crop width
+      const r = calculateFitDraw(1920, 1080, 480, 480, 'cover');
+      expect(r.sy).toBe(0);
+      expect(r.sh).toBe(1080);
+      expect(r.sw).toBe(1080); // croppped sw = srcH * dstRatio = 1080*1 = 1080
+      expect(r.sx).toBe((1920 - 1080) / 2); // centered crop
+    });
+
+    it('should crop height when source is taller', () => {
+      // src 1080x1920 (9:16) → dst 640x480 (4:3)
+      // srcRatio (0.5625) < dstRatio (1.333) → crop height
+      const r = calculateFitDraw(1080, 1920, 640, 480, 'cover');
+      expect(r.sx).toBe(0);
+      expect(r.sw).toBe(1080);
+      const expectedSh = 1080 / (640 / 480); // srcW / dstRatio
+      expect(r.sh).toBe(expectedSh);
+      expect(r.sy).toBe((1920 - expectedSh) / 2);
+    });
+
+    it('should not crop when aspect ratios match', () => {
+      const r = calculateFitDraw(1920, 1080, 960, 540, 'cover');
+      // Same aspect ratio → no crop needed
+      // srcRatio === dstRatio → falls into else branch
+      expect(r.sw).toBe(1920);
+      expect(r.sx).toBe(0);
+    });
+
+    it('should handle square source to wide dest', () => {
+      // src 500x500 → dst 800x400 (2:1)
+      // srcRatio(1) < dstRatio(2) → crop height
+      const r = calculateFitDraw(500, 500, 800, 400, 'cover');
+      expect(r.sw).toBe(500);
+      const expectedSh = 500 / 2; // srcW / dstRatio
+      expect(r.sh).toBe(expectedSh);
+    });
+  });
+});
+
+// ============================================================
+// roundRectPath
+// ============================================================
+describe('roundRectPath', () => {
+  it('should call beginPath and closePath', () => {
+    const canvas = createCanvas(100, 100);
+    const ctx = canvas.getContext('2d');
+    const beginSpy = jest.spyOn(ctx, 'beginPath');
+    const closeSpy = jest.spyOn(ctx, 'closePath');
+
+    roundRectPath(ctx, 10, 10, 80, 60, 5);
+
+    expect(beginSpy).toHaveBeenCalledTimes(1);
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not throw for zero radius', () => {
+    const ctx = createCanvas(100, 100).getContext('2d');
+    expect(() => roundRectPath(ctx, 0, 0, 50, 50, 0)).not.toThrow();
+  });
+
+  it('should not throw for large radius', () => {
+    const ctx = createCanvas(100, 100).getContext('2d');
+    expect(() => roundRectPath(ctx, 0, 0, 50, 50, 25)).not.toThrow();
+  });
+
+  it('should create fillable path', () => {
+    const canvas = createCanvas(100, 100);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ff0000';
+    roundRectPath(ctx, 10, 10, 80, 80, 10);
+    ctx.fill();
+    // center pixel should be red
+    const data = ctx.getImageData(50, 50, 1, 1).data;
+    expect(data[0]).toBe(255); // R
+    expect(data[1]).toBe(0);   // G
+    expect(data[2]).toBe(0);   // B
+  });
+});
+
+// ============================================================
+// createGradient
+// ============================================================
+describe('createGradient', () => {
+  function makeCtx() {
+    return createCanvas(100, 100).getContext('2d');
+  }
+
+  it('should create linear gradient', () => {
+    const ctx = makeCtx();
+    const grad = createGradient(ctx, { type: 'linear', colors: ['#FF0000', '#0000FF'] }, 0, 0, 100, 100);
+    expect(grad).toBeDefined();
+    // Should be usable as fillStyle
+    ctx.fillStyle = grad as any;
+    ctx.fillRect(0, 0, 100, 100);
+  });
+
+  it('should create radial gradient', () => {
+    const ctx = makeCtx();
+    const grad = createGradient(ctx, { type: 'radial', colors: ['#FFFFFF', '#000000'] }, 0, 0, 100, 100);
+    expect(grad).toBeDefined();
+    ctx.fillStyle = grad as any;
+    ctx.fillRect(0, 0, 100, 100);
+  });
+
+  it('should handle 3+ color stops', () => {
+    const ctx = makeCtx();
+    const grad = createGradient(ctx, { type: 'linear', colors: ['#FF0000', '#00FF00', '#0000FF'] }, 0, 0, 100, 100);
+    expect(grad).toBeDefined();
+  });
+
+  it('should respect angle for linear gradient', () => {
+    const ctx = makeCtx();
+    // angle = 90 → top to bottom
+    const grad = createGradient(ctx, { type: 'linear', colors: ['#FF0000', '#0000FF'], angle: 90 }, 0, 0, 100, 100);
+    expect(grad).toBeDefined();
+  });
+
+  it('should default angle to 0 when not specified', () => {
+    const ctx = makeCtx();
+    // no angle → defaults to 0 (left to right)
+    expect(() => createGradient(ctx, { type: 'linear', colors: ['#FFF', '#000'] }, 0, 0, 50, 50)).not.toThrow();
+  });
+
+  it('should handle non-zero position', () => {
+    const ctx = makeCtx();
+    const grad = createGradient(ctx, { type: 'radial', colors: ['#FFF', '#000'] }, 25, 25, 50, 50);
+    expect(grad).toBeDefined();
+  });
+});
+
+// ============================================================
+// clearMeasureCache
+// ============================================================
+describe('clearMeasureCache', () => {
+  it('should not throw', () => {
+    expect(() => clearMeasureCache()).not.toThrow();
+  });
+
+  it('should not throw when called twice', () => {
+    expect(() => {
+      clearMeasureCache();
+      clearMeasureCache();
+    }).not.toThrow();
+  });
+
+  it('should still allow measureTextBlock after clearing', () => {
+    clearMeasureCache();
+    const result = measureTextBlock('Test', 24, 'sans-serif', 400, 500, 1.3);
+    expect(result.width).toBeGreaterThan(0);
   });
 });

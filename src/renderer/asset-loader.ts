@@ -22,11 +22,18 @@ export class AssetLoader {
 
   /**
    * Download file từ URL về local, trả về local path
+   * Hỗ trợ: http/https URLs, file:// URLs, và relative paths (./path)
    */
   async downloadAsset(url: string, type: CachedAsset['type']): Promise<CachedAsset> {
     // Check cache
     if (this.cache.has(url)) {
       return this.cache.get(url)!;
+    }
+
+    // Detect local file paths
+    const localFilePath = this.resolveLocalPath(url);
+    if (localFilePath) {
+      return this.loadLocalFile(url, localFilePath, type);
     }
 
     const hash = crypto.createHash('md5').update(url).digest('hex');
@@ -43,19 +50,73 @@ export class AssetLoader {
     }
 
     // Download
-    const response = await axios({
-      method: 'GET',
-      url,
-      responseType: 'arraybuffer',
-      timeout: 120000, // 2 phút timeout
-    });
+    try {
+      const response = await axios({
+        method: 'GET',
+        url,
+        responseType: 'arraybuffer',
+        timeout: 120000, // 2 phút timeout
+      });
 
-    const buffer = Buffer.from(response.data);
-    fs.writeFileSync(localPath, buffer);
+      const buffer = Buffer.from(response.data);
+      fs.writeFileSync(localPath, buffer);
 
-    const asset: CachedAsset = { url, localPath, type, buffer };
-    this.cache.set(url, asset);
+      const asset: CachedAsset = { url, localPath, type, buffer };
+      this.cache.set(url, asset);
 
+      return asset;
+    } catch (err: any) {
+      // Wrap error với URL chi tiết để dễ debug
+      const status = err?.response?.status;
+      const statusText = err?.response?.statusText;
+      const code = err?.code; // ECONNREFUSED, ENOTFOUND, ETIMEDOUT, etc.
+      let detail = `Failed to download ${type}: ${url}`;
+      if (status) {
+        detail += ` — HTTP ${status} ${statusText || ''}`;
+      } else if (code) {
+        detail += ` — ${code}`;
+      }
+      if (err?.message && !err.message.includes(url)) {
+        detail += ` (${err.message})`;
+      }
+      throw new Error(detail);
+    }
+  }
+
+  /**
+   * Resolve local file path từ URL
+   * Trả về absolute path nếu là local file, null nếu là remote URL
+   */
+  private resolveLocalPath(url: string): string | null {
+    // file:// protocol
+    if (url.startsWith('file://')) {
+      return url.replace('file://', '');
+    }
+
+    // Relative path: ./path hoặc ../path
+    if (url.startsWith('./') || url.startsWith('../')) {
+      return path.resolve(process.cwd(), url);
+    }
+
+    // Absolute path (Unix/Windows)
+    if (url.startsWith('/') || /^[A-Za-z]:\\/.test(url)) {
+      return url;
+    }
+
+    return null;
+  }
+
+  /**
+   * Load local file thay vì download
+   */
+  private async loadLocalFile(originalUrl: string, filePath: string, type: CachedAsset['type']): Promise<CachedAsset> {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Local file not found: ${filePath}`);
+    }
+
+    // Sử dụng file trực tiếp (không copy vào cache)
+    const asset: CachedAsset = { url: originalUrl, localPath: filePath, type };
+    this.cache.set(originalUrl, asset);
     return asset;
   }
 
@@ -119,7 +180,9 @@ export class AssetLoader {
    */
   cleanup(): void {
     for (const asset of this.cache.values()) {
-      if (fs.existsSync(asset.localPath)) {
+      // Chỉ xóa files nằm trong cache dir (downloaded files)
+      // KHÔNG xóa local files gốc của user
+      if (asset.localPath.startsWith(this.cacheDir) && fs.existsSync(asset.localPath)) {
         try {
           fs.unlinkSync(asset.localPath);
         } catch {

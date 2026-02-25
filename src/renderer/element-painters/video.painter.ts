@@ -1,7 +1,9 @@
 import { Image, loadImage as canvasLoadImage } from '@napi-rs/canvas';
 import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
 import { spawn } from 'child_process';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { VideoElement } from '../../types';
 import { computePosition, calculateFitDraw, roundRectPath } from '../utils';
@@ -34,7 +36,9 @@ export class VideoFrameExtractor {
     private readonly targetFps: number
   ) {
     this.fps = targetFps;
-    this.framesDir = path.join(path.dirname(videoPath), `frames_${path.basename(videoPath, path.extname(videoPath))}`);
+    // Extract frames vào temp dir, tránh tạo thư mục trong source assets
+    const hash = crypto.createHash('md5').update(videoPath).digest('hex').slice(0, 12);
+    this.framesDir = path.join(os.tmpdir(), 'json2video-frames', `frames_${hash}`);
   }
 
   /**

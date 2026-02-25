@@ -253,10 +253,16 @@ export type SceneElement = TextElement | ImageElement | VideoElement | CaptionEl
  */
 export interface AudioConfig {
   url: string;
+  /** Thời điểm bắt đầu audio trong scene (giây), mặc định 0 */
   start?: number;
   volume?: number;
   loop?: boolean;
+  /** Thời lượng phát audio (giây), mặc định = toàn bộ file */
   duration?: number;
+  /** Cắt audio từ vị trí này trong file gốc (giây), mặc định 0 */
+  trimStart?: number;
+  /** Cắt audio đến vị trí này trong file gốc (giây), mặc định = hết file */
+  trimEnd?: number;
   /** Thời lượng fade in (giây), mặc định 0 */
   fadeIn?: number;
   /** Thời lượng fade out (giây), mặc định 0 */
@@ -274,7 +280,8 @@ export interface Scene {
   /** Gradient background — thay thế bgColor khi được set */
   bgGradient?: { colors: string[]; angle?: number };
   elements?: SceneElement[];
-  audio?: AudioConfig;
+  /** Audio cho scene: single hoặc array để mix nhiều tracks (nhạc nền + sound effect) */
+  audio?: AudioConfig | AudioConfig[];
   /** Transition vào scene (áp dụng ở đầu scene) */
   transition?: SceneTransition;
 }

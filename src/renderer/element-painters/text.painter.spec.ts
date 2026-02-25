@@ -107,4 +107,85 @@ describe('paintText', () => {
     });
     expect(() => paintText(ctx, element, canvasW, canvasH, 2.5, 5)).not.toThrow();
   });
+
+  // Shadow
+  describe('shadow', () => {
+    it('should render text with drop shadow', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        shadow: { color: 'rgba(0,0,0,0.5)', blur: 10, offsetX: 5, offsetY: 5 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render text with zero-blur shadow', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        shadow: { color: '#000', blur: 0, offsetX: 2, offsetY: 2 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render text with large shadow offset', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        shadow: { color: '#FF0000', blur: 20, offsetX: 50, offsetY: 50 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+  });
+
+  // Glow
+  describe('glow', () => {
+    it('should render text with glow effect', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        glow: { color: '#00FF88', blur: 10 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render text with strong glow', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        glow: { color: '#FF00FF', blur: 30 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render text with glow + shadow combined', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        glow: { color: '#00FFFF', blur: 15 },
+        shadow: { color: '#000', blur: 5, offsetX: 3, offsetY: 3 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+  });
+
+  // Gradient text
+  describe('gradient', () => {
+    it('should render text with linear gradient', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        gradient: { type: 'linear', colors: ['#FF0000', '#0000FF'], angle: 0 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render text with radial gradient', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        gradient: { type: 'radial', colors: ['#FFFFFF', '#000000'] },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render text with 3-color gradient', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        gradient: { type: 'linear', colors: ['#FF0000', '#00FF00', '#0000FF'], angle: 90 },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render text with gradient + stroke', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        gradient: { type: 'linear', colors: ['#FFD700', '#FF4500'] },
+        strokeColor: '#000', strokeWidth: 2,
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+  });
 });

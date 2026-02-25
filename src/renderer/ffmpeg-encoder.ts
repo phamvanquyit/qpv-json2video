@@ -164,9 +164,26 @@ export class FFmpegEncoder {
 
       let filter = `[${inputIdx}:a]`;
 
-      // Trim duration nếu có
-      if (audio.duration) {
-        filter += `atrim=0:${audio.duration},asetpts=PTS-STARTPTS,`;
+      // Trim audio: trimStart/trimEnd cắt từ file gốc, duration giới hạn output
+      const trimStart = audio.trimStart || 0;
+      const trimEnd = audio.trimEnd;
+      const duration = audio.duration;
+
+      if (trimStart > 0 || trimEnd !== undefined || duration !== undefined) {
+        // Build atrim filter
+        let atrimParts: string[] = [];
+        if (trimStart > 0) {
+          atrimParts.push(`start=${trimStart}`);
+        }
+        if (trimEnd !== undefined) {
+          atrimParts.push(`end=${trimEnd}`);
+        }
+        if (duration !== undefined && trimEnd === undefined) {
+          // duration = output duration (nếu không có trimEnd)
+          const end = trimStart + duration;
+          atrimParts.push(`end=${end}`);
+        }
+        filter += `atrim=${atrimParts.join(':')},asetpts=PTS-STARTPTS,`;
       }
 
       filter += `adelay=${delayMs}|${delayMs},volume=${volume}`;
@@ -174,8 +191,14 @@ export class FFmpegEncoder {
       // Loop nếu cần
       if (audio.loop) {
         // aloop: loop -1 lần (vô tận), size = 2 giây samples
+        // Nếu có trimStart/trimEnd, trim trước rồi mới loop
+        let loopFilter = `[${inputIdx}:a]`;
+        if (trimStart > 0 || trimEnd !== undefined) {
+          loopFilter += `atrim=${trimStart > 0 ? `start=${trimStart}` : ''}${trimEnd !== undefined ? `:end=${trimEnd}` : ''},asetpts=PTS-STARTPTS,`;
+        }
         filter =
-          `[${inputIdx}:a]aloop=loop=-1:size=${this.fps * 2 * 44100}` +
+          loopFilter +
+          `aloop=loop=-1:size=${this.fps * 2 * 44100}` +
           `,atrim=0:${this.getTotalDuration()}` +
           `,adelay=${delayMs}|${delayMs},volume=${volume}`;
       }
@@ -185,7 +208,15 @@ export class FFmpegEncoder {
         filter += `,afade=t=in:st=0:d=${fadeIn}`;
       }
       if (fadeOut > 0) {
-        const audioDur = audio.duration || this.getTotalDuration();
+        // Calculate actual audio duration after trim
+        let audioDur: number;
+        if (duration !== undefined) {
+          audioDur = duration;
+        } else if (trimEnd !== undefined) {
+          audioDur = trimEnd - trimStart;
+        } else {
+          audioDur = this.getTotalDuration();
+        }
         const fadeOutStart = Math.max(0, audioDur - fadeOut);
         filter += `,afade=t=out:st=${fadeOutStart}:d=${fadeOut}`;
       }
@@ -228,6 +259,7 @@ export class FFmpegEncoder {
 
   /**
    * Thu thập tất cả audio inputs từ tracks
+   * Hỗ trợ cả single AudioConfig và AudioConfig[] per scene
    */
   private async collectAudioInputs(assetLoader: AssetLoader): Promise<Array<AudioConfig & { localPath: string }>> {
     const audioInputs: Array<AudioConfig & { localPath: string }> = [];
@@ -237,13 +269,20 @@ export class FFmpegEncoder {
       let sceneStartInTrack = 0;
 
       for (const scene of track.scenes) {
-        if (scene.audio?.url) {
-          const asset = await assetLoader.downloadAsset(scene.audio.url, 'audio');
-          audioInputs.push({
-            ...scene.audio,
-            start: trackStart + sceneStartInTrack + (scene.audio.start || 0),
-            localPath: asset.localPath,
-          });
+        // Normalize audio to array
+        const audioConfigs = scene.audio
+          ? Array.isArray(scene.audio) ? scene.audio : [scene.audio]
+          : [];
+
+        for (const audioConfig of audioConfigs) {
+          if (audioConfig.url) {
+            const asset = await assetLoader.downloadAsset(audioConfig.url, 'audio');
+            audioInputs.push({
+              ...audioConfig,
+              start: trackStart + sceneStartInTrack + (audioConfig.start || 0),
+              localPath: asset.localPath,
+            });
+          }
         }
         sceneStartInTrack += scene.duration;
       }

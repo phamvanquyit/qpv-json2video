@@ -528,4 +528,153 @@ describe('CanvasRenderer', () => {
       renderer.cleanup();
     });
   });
+
+  // ========================
+  // Scene bgGradient
+  // ========================
+
+  describe('bgGradient', () => {
+    it('should render scene with bgGradient', async () => {
+      const config = singleTrackConfig(4, 4, [{
+        duration: 1,
+        bgGradient: { colors: ['#ff0000', '#0000ff'], angle: 0 },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      expect(frame.length).toBe(4 * 4 * 4);
+      renderer.cleanup();
+    });
+
+    it('bgGradient should override bgColor', async () => {
+      const config = singleTrackConfig(4, 4, [{
+        duration: 1,
+        bgColor: '#00ff00',
+        bgGradient: { colors: ['#ff0000', '#0000ff'] },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      // Should NOT be green (bgGradient overrides bgColor)
+      // Check that at least some pixel is not pure green
+      const hasNonGreen = frame[0] !== 0 || frame[2] !== 0;
+      expect(hasNonGreen).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('bgGradient with 3 colors', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1,
+        bgGradient: { colors: ['#ff0000', '#00ff00', '#0000ff'], angle: 90 },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
+
+  // ========================
+  // Element duration (partial visibility)
+  // ========================
+
+  describe('element duration', () => {
+    it('should show element only during its duration', async () => {
+      const config = singleTrackConfig(4, 4, [{
+        duration: 3, bgColor: '#000',
+        elements: [{
+          type: 'text', text: 'Brief', fontSize: 8, color: '#FFF',
+          position: 'center', zIndex: 1, start: 1, duration: 1,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      // At t=0.5s (before element start=1s) — frame 5
+      const before = await renderer.renderFrame(5);
+      // At t=1.5s (during element) — frame 15
+      const during = await renderer.renderFrame(15);
+      // At t=2.5s (after element end=2s) — frame 25
+      const after = await renderer.renderFrame(25);
+      // before and after should be same (just black), during should differ
+      expect(before.equals(after)).toBe(true);
+      expect(before.equals(during)).toBe(false);
+      renderer.cleanup();
+    });
+  });
+
+  // ========================
+  // Element shadow
+  // ========================
+
+  describe('element shadow', () => {
+    it('should render text element with shadow', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'text', text: 'S', fontSize: 10, color: '#FFF',
+          position: 'center', zIndex: 1,
+          shadow: { color: 'rgba(255,0,0,0.8)', blur: 5, offsetX: 2, offsetY: 2 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render shape element with shadow', async () => {
+      const config = singleTrackConfig(50, 50, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 30, height: 30, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          shadow: { color: '#000000', blur: 10, offsetX: 5, offsetY: 5 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
+
+  // ========================
+  // Scale / Rotation
+  // ========================
+
+  describe('scale and rotation', () => {
+    it('should render element with scale', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'text', text: 'X', fontSize: 8, color: '#FFF',
+          position: 'center', zIndex: 1, scale: 2,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with rotation', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'text', text: 'R', fontSize: 8, color: '#FFF',
+          position: 'center', zIndex: 1, rotation: 45,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with scale + rotation combined', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'text', text: 'SR', fontSize: 8, color: '#FFF',
+          position: 'center', zIndex: 1, scale: 1.5, rotation: 90,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
 });

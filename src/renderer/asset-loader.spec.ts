@@ -310,4 +310,119 @@ describe('AssetLoader', () => {
       expect(mockAxios).toHaveBeenCalledTimes(1);
     });
   });
+
+  // ========================
+  // LOCAL FILE PATHS
+  // ========================
+
+  describe('local file paths', () => {
+    let tempFile: string;
+
+    beforeEach(() => {
+      tempFile = path.join(testCacheDir, 'local-test.png');
+      fs.writeFileSync(tempFile, Buffer.alloc(50, 0xab));
+    });
+
+    it('should load file:// URL without downloading', async () => {
+      const asset = await loader.downloadAsset(`file://${tempFile}`, 'image');
+      expect(asset.localPath).toBe(tempFile);
+      expect(asset.type).toBe('image');
+      expect(mockAxios).not.toHaveBeenCalled();
+    });
+
+    it('should load absolute path without downloading', async () => {
+      const asset = await loader.downloadAsset(tempFile, 'image');
+      expect(asset.localPath).toBe(tempFile);
+      expect(mockAxios).not.toHaveBeenCalled();
+    });
+
+    it('should cache local file on subsequent calls', async () => {
+      const a1 = await loader.downloadAsset(tempFile, 'image');
+      const a2 = await loader.downloadAsset(tempFile, 'image');
+      expect(a1).toBe(a2); // same reference
+    });
+
+    it('should throw for non-existent local file', async () => {
+      await expect(
+        loader.downloadAsset('/tmp/non-existent-file-12345.png', 'image')
+      ).rejects.toThrow('Local file not found');
+    });
+
+    it('should NOT delete local files on cleanup', async () => {
+      // Create temp file OUTSIDE cache dir (simulates user's original file)
+      const externalFile = path.join(os.tmpdir(), `j2v-external-${Date.now()}.png`);
+      fs.writeFileSync(externalFile, Buffer.alloc(10, 0xcc));
+      try {
+        await loader.downloadAsset(externalFile, 'image');
+        loader.cleanup();
+        // External local file should still exist (not deleted by our cleanup)
+        expect(fs.existsSync(externalFile)).toBe(true);
+      } finally {
+        if (fs.existsSync(externalFile)) fs.unlinkSync(externalFile);
+      }
+    });
+  });
+
+  // ========================
+  // ERROR HANDLING
+  // ========================
+
+  describe('error handling', () => {
+    it('should throw when download fails (network error)', async () => {
+      mockAxios.mockRejectedValueOnce(new Error('Network Error'));
+      await expect(
+        loader.downloadAsset('https://example.com/fail.png', 'image')
+      ).rejects.toThrow('Network Error');
+    });
+
+    it('should throw when download times out', async () => {
+      mockAxios.mockRejectedValueOnce(new Error('timeout of 120000ms exceeded'));
+      await expect(
+        loader.downloadAsset('https://example.com/timeout.png', 'image')
+      ).rejects.toThrow('timeout');
+    });
+
+    it('should not cache failed downloads', async () => {
+      mockAxios.mockRejectedValueOnce(new Error('fail'));
+      await expect(
+        loader.downloadAsset('https://example.com/retry.png', 'image')
+      ).rejects.toThrow();
+
+      // Reset mock to succeed on retry
+      mockAxios.mockResolvedValueOnce({ data: Buffer.alloc(10) });
+      const asset = await loader.downloadAsset('https://example.com/retry.png', 'image');
+      expect(asset.localPath).toContain(testCacheDir);
+      expect(mockAxios).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // ========================
+  // loadFont
+  // ========================
+
+  describe('loadFont', () => {
+    it('should download font file', async () => {
+      await expect(
+        loader.loadFont('https://example.com/font.ttf', 'TestFont')
+      ).resolves.toBeUndefined();
+      expect(mockAxios).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not re-download on second call', async () => {
+      await loader.loadFont('https://example.com/font2.ttf', 'TestFont2');
+      await loader.loadFont('https://example.com/font2.ttf', 'TestFont2');
+      expect(mockAxios).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ========================
+  // UNKNOWN TYPE FALLBACK
+  // ========================
+
+  describe('unknown type fallback', () => {
+    it('should fallback to .bin for unknown type', async () => {
+      const asset = await loader.downloadAsset('https://example.com/noext', 'font');
+      expect(asset.localPath).toEndWith('.ttf');
+    });
+  });
 });

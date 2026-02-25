@@ -67,6 +67,31 @@ export async function json2videoFile(videoConfig: any, outputPath: string, optio
 }
 
 /**
+ * Extract detailed error message from any error type.
+ * AggregateError (has .errors[]): show all sub-errors with partial stack.
+ * Regular Error: show stack trace.
+ */
+function formatErrorDetail(error: unknown): string {
+  const err = error as any;
+
+  // AggregateError (or any error with .errors array)
+  if (err && Array.isArray(err.errors)) {
+    const details = err.errors.map((e: any, i: number) => {
+      const msg = e?.message || e?.toString?.() || String(e);
+      const stack = e?.stack ? `\n    ${e.stack.split('\n').slice(1, 3).join('\n    ')}` : '';
+      return `  [${i + 1}] ${msg}${stack}`;
+    }).join('\n');
+    return `${err.message || 'AggregateError'} (${err.errors.length} errors):\n${details}`;
+  }
+
+  if (err instanceof Error) {
+    return err.stack || err.message;
+  }
+
+  return String(error);
+}
+
+/**
  * Core render pipeline — shared by json2video and json2videoFile
  *
  * OPTIMIZATIONS:
@@ -85,8 +110,10 @@ async function _renderVideo(videoConfig: any, options?: RenderOptions, directOut
       throw new Error('videoConfig không được để trống');
     }
 
-    if (!videoConfig.width || !videoConfig.height) {
-      throw new Error('videoConfig phải có đủ width và height');
+    const w = Number(videoConfig.width);
+    const h = Number(videoConfig.height);
+    if (!w || !h || w <= 0 || h <= 0) {
+      throw new Error('videoConfig phải có đủ width và height (> 0)');
     }
 
     if (!videoConfig.tracks && !videoConfig.scenes) {
@@ -193,7 +220,8 @@ async function _renderVideo(videoConfig: any, options?: RenderOptions, directOut
       ...(directOutputPath ? { filePath: directOutputPath } : {}),
     };
   } catch (error: any) {
-    throw new Error(`Lỗi khi render video: ${error.message}`);
+    const msg = formatErrorDetail(error);
+    throw new Error(`Lỗi khi render video: ${msg}`);
   } finally {
     // Cleanup
     if (renderer) {
@@ -258,11 +286,35 @@ function normalizeConfig(videoConfig: any): VideoConfig {
 }
 
 /**
+ * Check if URL is valid for asset loading
+ * Supports: http/https URLs, file:// URLs, relative paths (./), absolute paths
+ */
+function isValidAssetUrl(url: string): boolean {
+  // Remote URLs
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return true;
+  }
+  // Local file protocol
+  if (url.startsWith('file://')) {
+    return true;
+  }
+  // Relative paths
+  if (url.startsWith('./') || url.startsWith('../')) {
+    return true;
+  }
+  // Absolute paths (Unix/Windows)
+  if (url.startsWith('/') || /^[A-Za-z]:\\/.test(url)) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Validate video config
  */
 function validateVideoConfig(config: VideoConfig): void {
-  if (!config.width || !config.height) {
-    throw new Error('Video config phải có width và height');
+  if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
+    throw new Error('Video config phải có width và height > 0');
   }
 
   if (config.tracks.length === 0) {
@@ -283,18 +335,22 @@ function validateVideoConfig(config: VideoConfig): void {
       if (scene.elements) {
         scene.elements.forEach((element, elIdx) => {
           if (element.type === 'image' || element.type === 'video') {
-            if (element.url && !element.url.startsWith('http://') && !element.url.startsWith('https://')) {
-              throw new Error(`Element ${elIdx} trong scene ${sceneIdx}: URL phải bắt đầu bằng http:// hoặc https://`);
+            if (element.url && !isValidAssetUrl(element.url)) {
+              throw new Error(`Element ${elIdx} trong scene ${sceneIdx}: URL không hợp lệ`);
             }
           }
         });
       }
 
-      if (scene.audio?.url) {
-        if (!scene.audio.url.startsWith('http://') && !scene.audio.url.startsWith('https://')) {
-          throw new Error(`Scene ${sceneIdx}: Audio URL phải bắt đầu bằng http:// hoặc https://`);
+      // Validate audio (single hoặc array)
+      const audioConfigs = scene.audio
+        ? Array.isArray(scene.audio) ? scene.audio : [scene.audio]
+        : [];
+      audioConfigs.forEach((audio, audioIdx) => {
+        if (audio.url && !isValidAssetUrl(audio.url)) {
+          throw new Error(`Scene ${sceneIdx}, audio ${audioIdx}: URL không hợp lệ`);
         }
-      }
+      });
     });
   });
 }

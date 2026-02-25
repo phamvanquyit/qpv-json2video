@@ -103,16 +103,28 @@ export class CanvasRenderer {
         }
 
         // Download audio assets song song
-        if (scene.audio?.url) {
-          downloadPromises.push(
-            this.assetLoader.downloadAsset(scene.audio.url, 'audio').then(() => undefined)
-          );
+        const audioConfigs = scene.audio
+          ? Array.isArray(scene.audio) ? scene.audio : [scene.audio]
+          : [];
+        for (const audioConfig of audioConfigs) {
+          if (audioConfig.url) {
+            downloadPromises.push(
+              this.assetLoader.downloadAsset(audioConfig.url, 'audio').then(() => undefined)
+            );
+          }
         }
       }
     }
 
     // Download images + audio song song
-    await Promise.all(downloadPromises);
+    // Dùng allSettled để collect TẤT CẢ lỗi thay vì fail ở URL đầu tiên
+    const results = await Promise.allSettled(downloadPromises);
+    const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    if (failures.length > 0) {
+      const errors = failures.map(f => f.reason instanceof Error ? f.reason : new Error(String(f.reason)));
+      const detail = errors.map((e, i) => `  [${i + 1}] ${e.message}`).join('\n');
+      throw new Error(`Failed to preload ${failures.length} asset(s):\n${detail}`);
+    }
 
     // Extract video frames (tuần tự vì mỗi cái dùng nhiều CPU)
     for (const element of videoElements) {
@@ -403,9 +415,13 @@ export class CanvasRenderer {
         paintText(ctx, element, this.config.width, this.config.height, currentTime, sceneDuration, animState);
         break;
 
-      case 'image':
-        await paintImage(ctx, element, this.config.width, this.config.height, this.assetLoader);
+      case 'image': {
+        // Tính timeInElement cho GIF animation
+        const imgElStart = element.start ?? 0;
+        const timeInImageElement = currentTime - imgElStart;
+        await paintImage(ctx, element, this.config.width, this.config.height, this.assetLoader, timeInImageElement);
         break;
+      }
 
       case 'video': {
         const extractor = this.videoExtractors.get(element.url);
