@@ -5,3 +5,4 @@ dist/
 scripts/
 *.mp4
 TODO.md
+.agents/rules
