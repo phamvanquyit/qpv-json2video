@@ -936,4 +936,364 @@ describe('CanvasRenderer', () => {
       renderer.cleanup();
     });
   });
+
+  // ========================
+  // Phase 8: Mask (Clipping)
+  // ========================
+
+  describe('mask — shape mask', () => {
+    it('should render shape element with circle mask', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 30 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should be red (inside mask)
+      const cIdx = (50 * 100 + 50) * 4;
+      expect(frame[cIdx]).toBe(255);     // R
+      expect(frame[cIdx + 1]).toBe(0);   // G
+      expect(frame[cIdx + 2]).toBe(0);   // B
+      // Corner should be black (outside mask)
+      const cornerIdx = 0; // top-left pixel
+      expect(frame[cornerIdx]).toBe(0);     // R
+      expect(frame[cornerIdx + 1]).toBe(0); // G
+      expect(frame[cornerIdx + 2]).toBe(0); // B
+      renderer.cleanup();
+    });
+
+    it('should render shape element with star mask', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#00ff00',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'star' as const, radius: 40, points: 5, innerRadius: 0.4 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should be green (inside mask)
+      const cIdx = (50 * 100 + 50) * 4;
+      expect(frame[cIdx + 1]).toBe(255); // G
+      renderer.cleanup();
+    });
+
+    it('should render shape element with rect mask (borderRadius)', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#0000ff',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'rect' as const, width: 80, height: 60, borderRadius: 10 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center pixel should be blue (inside rect mask)
+      const cIdx = (50 * 100 + 50) * 4;
+      expect(frame[cIdx + 2]).toBe(255); // B
+      renderer.cleanup();
+    });
+
+    it('should render shape element with polygon mask (hexagon)', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff00ff',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'polygon' as const, radius: 40, numSides: 6 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should have magenta
+      const cIdx = (50 * 100 + 50) * 4;
+      expect(frame[cIdx]).toBe(255);     // R
+      expect(frame[cIdx + 2]).toBe(255); // B
+      renderer.cleanup();
+    });
+
+    it('should render shape element with ellipse mask', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ffff00',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'ellipse' as const, width: 80, height: 40 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should be yellow (inside mask)
+      const cIdx = (50 * 100 + 50) * 4;
+      expect(frame[cIdx]).toBe(255);     // R
+      expect(frame[cIdx + 1]).toBe(255); // G
+      expect(frame[cIdx + 2]).toBe(0);   // B
+      renderer.cleanup();
+    });
+
+    it('should render shape element with triangle mask (polygon 3 sides)', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ffffff',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'polygon' as const, radius: 30, numSides: 3 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      renderer.cleanup();
+    });
+  });
+
+  describe('mask — text mask', () => {
+    it('should render shape element with text mask', async () => {
+      const config = singleTrackConfig(200, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 200, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'text' as const, text: 'HI', fontSize: 80, fontWeight: 'bold' },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Some pixels should be red (inside text mask), corners should be black
+      const cornerIdx = 0;
+      expect(frame[cornerIdx]).toBe(0); // top-left should be black
+      renderer.cleanup();
+    });
+
+    it('should render text mask with strokeWidth', async () => {
+      const config = singleTrackConfig(200, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 200, height: 100, bgColor: '#00ff00',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'text' as const, text: 'X', fontSize: 80, strokeWidth: 10 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render text mask with letterSpacing', async () => {
+      const config = singleTrackConfig(300, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 300, height: 100, bgColor: '#0000ff',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'text' as const, text: 'ABC', fontSize: 60, letterSpacing: 10 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
+
+  describe('mask — inverted', () => {
+    it('should render inverted shape mask (circle hole)', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 30, invert: true },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should be BLACK (inverted — hole in mask)
+      const cIdx = (50 * 100 + 50) * 4;
+      expect(frame[cIdx]).toBe(0);       // R — black (hole)
+      expect(frame[cIdx + 1]).toBe(0);   // G
+      expect(frame[cIdx + 2]).toBe(0);   // B
+      renderer.cleanup();
+    });
+  });
+
+  describe('mask — combined with other features', () => {
+    it('should render mask + opacity', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ffffff',
+          position: 'center' as const, zIndex: 1,
+          opacity: 0.5,
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 40 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should be grayish (opacity 0.5 white on black, with canvas alpha premultiplication)
+      const cIdx = (50 * 100 + 50) * 4;
+      expect(frame[cIdx]).toBeGreaterThan(40);
+      expect(frame[cIdx]).toBeLessThan(180);
+      renderer.cleanup();
+    });
+
+    it('should render mask + animation', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 2, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          animation: { type: 'fadeIn' as const, fadeInDuration: 1 },
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 40 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(5))).toBe(true); // mid-fade
+      expect(Buffer.isBuffer(await renderer.renderFrame(15))).toBe(true); // fully visible
+      renderer.cleanup();
+    });
+
+    it('should render mask + filters', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          filters: { blur: 2, brightness: 1.2 },
+          mask: { type: 'shape' as const, shape: 'star' as const, radius: 40 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render mask + blend mode', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#0000ff',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          blendMode: 'screen' as const,
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 40 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render mask + shadow', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 80, height: 80, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          shadow: { color: '#ffffff', blur: 5, offsetX: 3, offsetY: 3 },
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 35 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render mask + scale/rotation', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 60, height: 60, bgColor: '#00ff00',
+          position: 'center' as const, zIndex: 1,
+          scale: 1.5, rotation: 45,
+          mask: { type: 'shape' as const, shape: 'polygon' as const, radius: 25, numSides: 6 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render mask with offsetX/offsetY', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 30, offsetX: 20, offsetY: -10 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render text element with mask', async () => {
+      const config = singleTrackConfig(200, 100, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'text', text: 'HELLO WORLD', fontSize: 24, color: '#ffffff',
+          position: 'center', zIndex: 1,
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 40 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render mask + keyframes animation', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 2, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 100, height: 100, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          keyframes: [
+            { time: 0, opacity: 0, scale: 0.5 },
+            { time: 1, opacity: 1, scale: 1.0 },
+          ],
+          mask: { type: 'shape' as const, shape: 'circle' as const, radius: 40 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(5))).toBe(true);
+      expect(Buffer.isBuffer(await renderer.renderFrame(15))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render mask + all features combined', async () => {
+      const config = singleTrackConfig(100, 100, [{
+        duration: 2, bgColor: '#0000ff',
+        elements: [{
+          type: 'shape' as const, width: 80, height: 80, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          opacity: 0.8,
+          scale: 1.2,
+          rotation: 15,
+          filters: { brightness: 1.1 },
+          blendMode: 'screen' as const,
+          shadow: { color: '#000000', blur: 5, offsetX: 2, offsetY: 2 },
+          animation: { type: 'fadeIn' as const, fadeInDuration: 0.5 },
+          mask: { type: 'shape' as const, shape: 'star' as const, radius: 30, points: 5 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(2))).toBe(true);
+      expect(Buffer.isBuffer(await renderer.renderFrame(15))).toBe(true);
+      renderer.cleanup();
+    });
+  });
 });

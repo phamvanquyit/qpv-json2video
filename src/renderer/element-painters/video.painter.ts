@@ -1,12 +1,29 @@
-import { Image, loadImage as canvasLoadImage } from '@napi-rs/canvas';
-import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
+import { Image, createCanvas, loadImage as canvasLoadImage } from '@napi-rs/canvas';
+import type { SKRSContext2D as CanvasRenderingContext2D, Canvas } from '@napi-rs/canvas';
 import { spawn } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { VideoElement } from '../../types';
-import { computePosition, calculateFitDraw, roundRectPath } from '../utils';
+import { computePosition, calculateFitDraw, roundRectPath, applyChromaKey } from '../utils';
+
+/**
+ * PERF: Cached temp canvas cho chroma key.
+ * Tránh tạo mới mỗi frame (30fps × 5s = 150 canvas → chỉ 1 canvas reuse).
+ */
+let _chromaCanvas: Canvas | null = null;
+let _chromaW = 0;
+let _chromaH = 0;
+
+function getChromaKeyCanvas(width: number, height: number): Canvas {
+  if (!_chromaCanvas || _chromaW !== width || _chromaH !== height) {
+    _chromaCanvas = createCanvas(width, height);
+    _chromaW = width;
+    _chromaH = height;
+  }
+  return _chromaCanvas;
+}
 
 /**
  * VideoFrameExtractor - Dùng FFmpeg để extract frames từ video source
@@ -242,13 +259,36 @@ export async function paintVideoFrame(
       ctx.globalAlpha = opacity;
     }
 
-    if (crop) {
-      // === Crop mode: vẽ chỉ vùng crop từ source frame ===
-      // Source rect = crop region, dest rect = element position
+    if (element.chromaKey) {
+      // === Chroma key: dùng temp canvas để alpha compositing đúng ===
+      // putImageData thay thế pixels trực tiếp (không composite)
+      // Nên phải vẽ lên temp canvas → apply chroma key → drawImage lên main canvas
+      const ck = element.chromaKey;
+
+      // PERF: Reuse temp canvas (tránh tạo mới mỗi frame — 30fps × 5s = 150 canvas)
+      const tempCanvas = getChromaKeyCanvas(width, height);
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.clearRect(0, 0, width, height);
+
+      // Vẽ frame lên temp canvas
+      if (crop) {
+        tempCtx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, width, height);
+      } else {
+        const drawParams = calculateFitDraw(img.width, img.height, width, height, fit);
+        tempCtx.drawImage(img, drawParams.sx, drawParams.sy, drawParams.sw, drawParams.sh, 0, 0, width, height);
+      }
+
+      // Apply chroma key trên temp canvas (set alpha=0 cho green pixels)
+      applyChromaKey(tempCtx, 0, 0, width, height, ck.color, ck.tolerance, ck.softness);
+
+      // drawImage composite lên main canvas (alpha=0 sẽ trong suốt, hiện background)
+      ctx.drawImage(tempCanvas, pos.x, pos.y);
+    } else if (crop) {
+      // === Crop mode (không chroma key) ===
       ctx.drawImage(
         img,
-        crop.x, crop.y, crop.width, crop.height, // source (crop region)
-        pos.x, pos.y, width, height               // destination
+        crop.x, crop.y, crop.width, crop.height,
+        pos.x, pos.y, width, height
       );
     } else {
       // Fit mode (legacy)

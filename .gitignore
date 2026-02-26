@@ -2,7 +2,8 @@ node_modules/
 dist/
 *.tgz
 .DS_Store
-scripts/
+scripts/*
+!scripts/render_test.js
 *.mp4
 TODO.md
 .agents/rules

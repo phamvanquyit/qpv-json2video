@@ -207,6 +207,93 @@ export interface SceneTransition {
   duration: number;
 }
 
+// ============================================================
+// Mask Config — clip element theo shape hoặc text
+// ============================================================
+
+/**
+ * Mask shape types
+ * - 'rect': hình chữ nhật (có thể bo tròn)
+ * - 'circle': hình tròn
+ * - 'ellipse': hình elip
+ * - 'star': ngôi sao
+ * - 'polygon': đa giác đều (numSides)
+ */
+export type MaskShapeType = 'rect' | 'circle' | 'ellipse' | 'star' | 'polygon';
+
+/**
+ * Shape mask — clip element theo shape (rect, circle, star, polygon, ellipse)
+ *
+ * @example
+ * ```json
+ * { "type": "shape", "shape": "circle", "radius": 200 }
+ * { "type": "shape", "shape": "star", "radius": 150, "points": 5 }
+ * { "type": "shape", "shape": "rect", "width": 400, "height": 300, "borderRadius": 20 }
+ * { "type": "shape", "shape": "polygon", "radius": 200, "numSides": 6 }
+ * ```
+ */
+export interface ShapeMaskConfig {
+  type: 'shape';
+  /** Loại shape mask */
+  shape: MaskShapeType;
+  /** Bán kính (px) — dùng cho circle, star, polygon */
+  radius?: number;
+  /** Chiều rộng (px) — dùng cho rect, ellipse */
+  width?: number;
+  /** Chiều cao (px) — dùng cho rect, ellipse */
+  height?: number;
+  /** Border radius (px) — dùng cho rect */
+  borderRadius?: number;
+  /** Số cánh ngôi sao, mặc định 5 — dùng cho star */
+  points?: number;
+  /** Inner radius ratio (0–1) cho star, mặc định 0.4. 0 = nhọn, 1 = thành circle */
+  innerRadius?: number;
+  /** Số cạnh — dùng cho polygon, mặc định 6 */
+  numSides?: number;
+  /** Offset X từ tâm element (px), mặc định 0 */
+  offsetX?: number;
+  /** Offset Y từ tâm element (px), mặc định 0 */
+  offsetY?: number;
+  /** Đảo ngược mask (hiện bên ngoài shape thay vì bên trong), mặc định false */
+  invert?: boolean;
+}
+
+/**
+ * Text mask — clip element theo text shape (video/image chạy bên trong chữ)
+ *
+ * @example
+ * ```json
+ * { "type": "text", "text": "HELLO", "fontSize": 200 }
+ * { "type": "text", "text": "TRAVEL", "fontSize": 300, "fontWeight": "bold", "fontFamily": "Bebas Neue" }
+ * ```
+ */
+export interface TextMaskConfig {
+  type: 'text';
+  /** Text dùng làm mask */
+  text: string;
+  /** Font size (px) */
+  fontSize: number;
+  /** Font family, mặc định 'sans-serif' */
+  fontFamily?: string;
+  /** Font weight, mặc định 'bold' */
+  fontWeight?: string | number;
+  /** Text align, mặc định 'center' */
+  textAlign?: 'left' | 'center' | 'right';
+  /** Offset X từ tâm element (px), mặc định 0 */
+  offsetX?: number;
+  /** Offset Y từ tâm element (px), mặc định 0 */
+  offsetY?: number;
+  /** Đảo ngược mask (hiện bên ngoài text thay vì bên trong), mặc định false */
+  invert?: boolean;
+  /** Letter spacing (px), mặc định 0 */
+  letterSpacing?: number;
+  /** Stroke width cho text mask — giúp text mask dày hơn, mặc định 0 */
+  strokeWidth?: number;
+}
+
+/** Mask config — shape hoặc text */
+export type MaskConfig = ShapeMaskConfig | TextMaskConfig;
+
 /**
  * Base interface cho tất cả elements
  */
@@ -251,6 +338,17 @@ export interface ElementBase {
   filters?: FilterConfig;
   /** Blend mode — cách element composite lên canvas. Mặc định 'normal' (source-over) */
   blendMode?: BlendMode;
+  /**
+   * Mask — clip element theo shape hoặc text.
+   * Element content chỉ hiển thị bên trong vùng mask.
+   *
+   * @example
+   * ```json
+   * "mask": { "type": "circle", "radius": 200 }
+   * "mask": { "type": "text", "text": "HELLO", "fontSize": 200 }
+   * ```
+   */
+  mask?: MaskConfig;
 }
 
 /**
@@ -412,6 +510,23 @@ export interface KenBurnsConfig {
 }
 
 /**
+ * Chroma key config — remove background color (green screen effect)
+ *
+ * @example
+ * ```json
+ * { "color": "#00FF00", "tolerance": 0.3, "softness": 0.1 }
+ * ```
+ */
+export interface ChromaKeyConfig {
+  /** Màu cần xóa, ví dụ '#00FF00' (green screen) hoặc '#0000FF' (blue screen) */
+  color: string;
+  /** Độ khoan dung (0–1). 0 = chỉ match chính xác, 1 = match rộng. Mặc định 0.3 */
+  tolerance?: number;
+  /** Độ mềm viền (0–1). 0 = hard edge, 1 = rất mềm. Mặc định 0.1 */
+  softness?: number;
+}
+
+/**
  * Video crop config — crop vùng hiển thị từ source video
  *
  * @example
@@ -494,6 +609,9 @@ export interface VideoElement extends ElementBase {
    * ```
    */
   speedCurve?: SpeedCurvePoint[];
+
+  /** Chroma key (green screen) — remove background color */
+  chromaKey?: ChromaKeyConfig;
 }
 
 /**

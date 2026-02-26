@@ -167,6 +167,54 @@ export const AudioConfigSchema = z.object({
   fadeOut: z.number().min(0).optional(),
 });
 
+export const ChromaKeyConfigSchema = z.object({
+  color: z.string(),
+  tolerance: z.number().min(0).max(1).optional(),
+  softness: z.number().min(0).max(1).optional(),
+});
+
+// ============================================================
+// Mask schemas
+// ============================================================
+
+export const MaskShapeTypeSchema = z.enum([
+  'rect', 'circle', 'ellipse', 'star', 'polygon',
+]);
+
+export const ShapeMaskConfigSchema = z.object({
+  type: z.literal('shape'),
+  shape: MaskShapeTypeSchema,
+  radius: z.number().positive().optional(),
+  width: z.number().positive().optional(),
+  height: z.number().positive().optional(),
+  borderRadius: z.number().min(0).optional(),
+  points: z.number().int().min(3).optional(),
+  innerRadius: z.number().min(0).max(1).optional(),
+  numSides: z.number().int().min(3).optional(),
+  offsetX: z.number().optional(),
+  offsetY: z.number().optional(),
+  invert: z.boolean().optional(),
+});
+
+export const TextMaskConfigSchema = z.object({
+  type: z.literal('text'),
+  text: z.string().min(1),
+  fontSize: z.number().positive(),
+  fontFamily: z.string().optional(),
+  fontWeight: z.union([z.string(), z.number()]).optional(),
+  textAlign: z.enum(['left', 'center', 'right']).optional(),
+  offsetX: z.number().optional(),
+  offsetY: z.number().optional(),
+  invert: z.boolean().optional(),
+  letterSpacing: z.number().optional(),
+  strokeWidth: z.number().min(0).optional(),
+});
+
+export const MaskConfigSchema = z.discriminatedUnion('type', [
+  ShapeMaskConfigSchema,
+  TextMaskConfigSchema,
+]);
+
 // ============================================================
 // Element Base schema (shared props)
 // ============================================================
@@ -187,6 +235,7 @@ const ElementBaseSchema = z.object({
   shadow: ShadowConfigSchema.optional(),
   filters: FilterConfigSchema.optional(),
   blendMode: BlendModeSchema.optional(),
+  mask: MaskConfigSchema.optional(),
 });
 
 // ============================================================
@@ -255,6 +304,7 @@ export const VideoElementSchema = ElementBaseSchema.extend({
     time: z.number().min(0),
     speed: z.number().positive(),
   })).min(2).optional(),
+  chromaKey: ChromaKeyConfigSchema.optional(),
 });
 
 export const ShapeElementSchema = ElementBaseSchema.extend({

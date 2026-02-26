@@ -1,6 +1,6 @@
 import { Canvas, createCanvas } from '@napi-rs/canvas';
 import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
-import { Scene, SceneElement, Track, VideoConfig, VideoElement, WaveformElement } from '../types';
+import { Scene, SceneElement, Track, VideoConfig, VideoElement, WaveformElement, MaskConfig, ShapeMaskConfig, TextMaskConfig } from '../types';
 import { AssetLoader } from './asset-loader';
 import { paintCaption, clearCaptionCaches } from './element-painters/caption.painter';
 import { clearImageCache, paintImage } from './element-painters/image.painter';
@@ -16,6 +16,7 @@ import {
   isElementVisible, clearMeasureCache,
   createGradient,
   buildFilterString, blendModeToComposite,
+  buildFontString, normalizeFontWeight, roundRectPath,
   ElementAnimationState, KeyframeAnimationState,
 } from './utils';
 
@@ -49,6 +50,10 @@ export class CanvasRenderer {
   // sceneTimeRanges[track] = [0, 5, 10, 15, ...] — cumulative start times
   // Dùng binary search thay vì linear scan mỗi frame
   private sceneTimeRanges = new Map<Track, number[]>();
+
+  // === Mask: reusable offscreen canvas ===
+  private maskCanvas: Canvas | null = null;
+  private maskCtx: CanvasRenderingContext2D | null = null;
 
   constructor(
     private readonly config: VideoConfig,
@@ -203,6 +208,13 @@ export class CanvasRenderer {
         for (const el of scene.elements) {
           if ((el.type === 'text' || el.type === 'caption') && el.fontFamily) {
             const name = el.fontFamily.trim();
+            if (!CanvasRenderer.SYSTEM_FONTS.has(name.toLowerCase())) {
+              fontNames.add(name);
+            }
+          }
+          // Also scan mask text fontFamily
+          if (el.mask && el.mask.type === 'text' && el.mask.fontFamily) {
+            const name = el.mask.fontFamily.trim();
             if (!CanvasRenderer.SYSTEM_FONTS.has(name.toLowerCase())) {
               fontNames.add(name);
             }
@@ -384,12 +396,31 @@ export class CanvasRenderer {
           const needsTransform = animState.translateX !== 0 || animState.translateY !== 0 ||
             elScale !== 1 || effectiveRotation !== 0;
 
+          // === Phase 8: Mask support ===
+          const hasMask = !!element.mask;
+          let renderCtx = ctx; // Context to paint on (main or temp for mask)
+
+          if (hasMask) {
+            // Create/reuse offscreen canvas for masked rendering
+            if (!this.maskCanvas) {
+              this.maskCanvas = createCanvas(canvasW, canvasH);
+              this.maskCtx = this.maskCanvas.getContext('2d');
+            }
+            const mctx = this.maskCtx!;
+            // Clear temp canvas
+            mctx.globalAlpha = 1;
+            mctx.globalCompositeOperation = 'source-over';
+            mctx.filter = 'none';
+            mctx.clearRect(0, 0, canvasW, canvasH);
+            renderCtx = mctx;
+          }
+
           if (needsTransform) {
-            ctx.save();
+            renderCtx.save();
 
             // Apply animation translate (for preset slide animations)
             if (animState.translateX !== 0 || animState.translateY !== 0) {
-              ctx.translate(animState.translateX, animState.translateY);
+              renderCtx.translate(animState.translateX, animState.translateY);
             }
 
             if (elScale !== 1 || effectiveRotation !== 0) {
@@ -412,52 +443,71 @@ export class CanvasRenderer {
                 pivotY = canvasH / 2;
               }
 
-              ctx.translate(pivotX, pivotY);
-              if (elScale !== 1) ctx.scale(elScale, elScale);
-              if (effectiveRotation !== 0) ctx.rotate((effectiveRotation * Math.PI) / 180);
-              ctx.translate(-pivotX, -pivotY);
+              renderCtx.translate(pivotX, pivotY);
+              if (elScale !== 1) renderCtx.scale(elScale, elScale);
+              if (effectiveRotation !== 0) renderCtx.rotate((effectiveRotation * Math.PI) / 180);
+              renderCtx.translate(-pivotX, -pivotY);
             }
           }
 
           // Apply drop shadow nếu element có shadow config
           const shadow = element.shadow;
           if (shadow) {
-            if (!needsTransform) ctx.save();
-            ctx.shadowColor = shadow.color;
-            ctx.shadowBlur = shadow.blur;
-            ctx.shadowOffsetX = shadow.offsetX;
-            ctx.shadowOffsetY = shadow.offsetY;
+            if (!needsTransform) renderCtx.save();
+            renderCtx.shadowColor = shadow.color;
+            renderCtx.shadowBlur = shadow.blur;
+            renderCtx.shadowOffsetX = shadow.offsetX;
+            renderCtx.shadowOffsetY = shadow.offsetY;
           }
 
           // Set opacity (without scene alpha double-counting if scene transform is active)
-          ctx.globalAlpha = hasSceneTransform
-            ? baseOpacity * animState.opacity  // scene alpha already applied via ctx.save
-            : effectiveOpacity;
+          renderCtx.globalAlpha = hasMask
+            ? 1  // full opacity on mask canvas, apply real opacity when compositing to main
+            : (hasSceneTransform
+              ? baseOpacity * animState.opacity
+              : effectiveOpacity);
 
           // === Phase 5: Apply CSS filters ===
           const hasFilters = element.filters && Object.keys(element.filters).length > 0;
           if (hasFilters) {
-            if (!needsTransform && !shadow) ctx.save();
+            if (!needsTransform && !shadow) renderCtx.save();
             const filterStr = buildFilterString(element.filters!);
             if (filterStr) {
-              ctx.filter = filterStr;
+              renderCtx.filter = filterStr;
             }
           }
 
-          // === Phase 5: Apply blend mode ===
+          // === Phase 5: Apply blend mode (only on main ctx, not mask temp) ===
           const hasBlendMode = element.blendMode && element.blendMode !== 'normal';
-          if (hasBlendMode) {
-            ctx.globalCompositeOperation = blendModeToComposite(element.blendMode!) as any;
+          if (hasBlendMode && !hasMask) {
+            renderCtx.globalCompositeOperation = blendModeToComposite(element.blendMode!) as any;
           }
 
-          await this.paintElement(ctx, elementToPaint, sceneTimeOffset, scene.duration, sceneFrameOffset, animState);
+          await this.paintElement(renderCtx, elementToPaint, sceneTimeOffset, scene.duration, sceneFrameOffset, animState);
 
           if (needsTransform || shadow || hasFilters) {
+            renderCtx.restore();
+          }
+
+          // === Phase 8: Apply mask and composite back to main canvas ===
+          if (hasMask) {
+            const mctx = this.maskCtx!;
+            this.applyMask(mctx, element.mask!, canvasW, canvasH, elementToPaint);
+
+            // Composite masked result onto main canvas
+            ctx.save();
+            ctx.globalAlpha = hasSceneTransform
+              ? baseOpacity * animState.opacity
+              : effectiveOpacity;
+            if (hasBlendMode) {
+              ctx.globalCompositeOperation = blendModeToComposite(element.blendMode!) as any;
+            }
+            ctx.drawImage(this.maskCanvas!, 0, 0);
             ctx.restore();
           }
 
           // === Reset blend mode + filter ===
-          if (hasBlendMode) {
+          if (hasBlendMode && !hasMask) {
             ctx.globalCompositeOperation = 'source-over';
           }
           if (hasFilters && !needsTransform && !shadow) {
@@ -582,6 +632,188 @@ export class CanvasRenderer {
   }
 
   /**
+   * Apply mask lên offscreen canvas — clip content bằng destination-in
+   * Mask shape được vẽ tại vị trí tương đối so với element center
+   */
+  private applyMask(
+    mctx: CanvasRenderingContext2D,
+    mask: MaskConfig,
+    canvasW: number,
+    canvasH: number,
+    element: SceneElement
+  ): void {
+    // Compute element center for mask positioning
+    const elW = ('width' in element) ? (element as any).width : canvasW;
+    const elH = ('height' in element) ? (element as any).height : canvasH;
+    const pos = computePosition(element.position, canvasW, canvasH, elW, elH, element.offsetX ?? 0, element.offsetY ?? 0);
+    const centerX = pos.x + elW / 2 + (mask.offsetX ?? 0);
+    const centerY = pos.y + elH / 2 + (mask.offsetY ?? 0);
+
+    const invert = mask.invert ?? false;
+
+    // Use destination-in (keep intersection) or destination-out (keep outside)
+    mctx.globalCompositeOperation = invert ? 'destination-out' : 'destination-in' as any;
+    mctx.globalAlpha = 1;
+
+    if (mask.type === 'shape') {
+      this.drawShapeMask(mctx, mask, centerX, centerY, elW, elH);
+    } else if (mask.type === 'text') {
+      this.drawTextMask(mctx, mask, centerX, centerY);
+    }
+
+    // Reset composite
+    mctx.globalCompositeOperation = 'source-over';
+  }
+
+  /**
+   * Vẽ shape mask path và fill
+   */
+  private drawShapeMask(
+    ctx: CanvasRenderingContext2D,
+    mask: ShapeMaskConfig,
+    centerX: number,
+    centerY: number,
+    elW: number,
+    elH: number
+  ): void {
+    ctx.fillStyle = '#000000';
+
+    switch (mask.shape) {
+      case 'circle': {
+        const radius = mask.radius ?? Math.min(elW, elH) / 2;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'ellipse': {
+        const rx = (mask.width ?? elW) / 2;
+        const ry = (mask.height ?? elH) / 2;
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'rect': {
+        const w = mask.width ?? elW;
+        const h = mask.height ?? elH;
+        const x = centerX - w / 2;
+        const y = centerY - h / 2;
+        const br = mask.borderRadius ?? 0;
+        if (br > 0) {
+          roundRectPath(ctx, x, y, w, h, br);
+          ctx.fill();
+        } else {
+          ctx.fillRect(x, y, w, h);
+        }
+        break;
+      }
+
+      case 'star': {
+        const outerR = mask.radius ?? Math.min(elW, elH) / 2;
+        const points = mask.points ?? 5;
+        const innerRatio = mask.innerRadius ?? 0.4;
+        const innerR = outerR * innerRatio;
+
+        ctx.beginPath();
+        for (let i = 0; i < points * 2; i++) {
+          const angle = (Math.PI * i) / points - Math.PI / 2;
+          const r = i % 2 === 0 ? outerR : innerR;
+          const px = centerX + Math.cos(angle) * r;
+          const py = centerY + Math.sin(angle) * r;
+          if (i === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        ctx.closePath();
+        ctx.fill();
+        break;
+      }
+
+      case 'polygon': {
+        const radius = mask.radius ?? Math.min(elW, elH) / 2;
+        const sides = mask.numSides ?? 6;
+
+        ctx.beginPath();
+        for (let i = 0; i < sides; i++) {
+          const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
+          const px = centerX + Math.cos(angle) * radius;
+          const py = centerY + Math.sin(angle) * radius;
+          if (i === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        ctx.closePath();
+        ctx.fill();
+        break;
+      }
+    }
+  }
+
+  /**
+   * Vẽ text mask — text shape được fill solid, dùng làm clip
+   */
+  private drawTextMask(
+    ctx: CanvasRenderingContext2D,
+    mask: TextMaskConfig,
+    centerX: number,
+    centerY: number
+  ): void {
+    const fontWeight = normalizeFontWeight(mask.fontWeight ?? 'bold');
+    const fontFamily = mask.fontFamily ?? 'sans-serif';
+    const fontSize = mask.fontSize;
+
+    ctx.font = buildFontString(fontWeight, fontSize, fontFamily);
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000000';
+
+    const textWidth = ctx.measureText(mask.text).width;
+
+    // Text align
+    let textX: number;
+    const align = mask.textAlign ?? 'center';
+    if (align === 'center') {
+      textX = centerX - textWidth / 2;
+    } else if (align === 'right') {
+      textX = centerX + textWidth / 2 - textWidth;
+    } else {
+      textX = centerX - textWidth / 2;
+    }
+
+    const textY = centerY;
+
+    // Letter spacing support
+    if (mask.letterSpacing && mask.letterSpacing !== 0) {
+      let cursorX = textX;
+      for (const char of mask.text) {
+        ctx.fillText(char, cursorX, textY);
+        if (mask.strokeWidth && mask.strokeWidth > 0) {
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = mask.strokeWidth;
+          ctx.lineJoin = 'round';
+          ctx.strokeText(char, cursorX, textY);
+        }
+        cursorX += ctx.measureText(char).width + mask.letterSpacing;
+      }
+    } else {
+      // Stroke first for thicker mask
+      if (mask.strokeWidth && mask.strokeWidth > 0) {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = mask.strokeWidth;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(mask.text, textX, textY);
+      }
+      ctx.fillText(mask.text, textX, textY);
+    }
+  }
+
+  /**
    * Tìm scene active trong 1 track tại thời điểm timeInTrack (giây)
    * OPTIMIZATION: Dùng pre-computed sceneTimeRanges + binary search O(log n)
    */
@@ -664,5 +896,8 @@ export class CanvasRenderer {
     clearCaptionCaches();
     clearMeasureCache();
     clearWaveformCache();
+    // Clear mask canvas
+    this.maskCanvas = null;
+    this.maskCtx = null;
   }
 }

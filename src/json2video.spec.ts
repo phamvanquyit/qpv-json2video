@@ -254,7 +254,7 @@ describe('json2video', () => {
       );
     });
 
-    it('should default missing element width/height/zIndex to 0', async () => {
+    it('should default missing element zIndex to 0', async () => {
       await json2video({
         width: 1080, height: 1920,
         scenes: [{ duration: 1, elements: [{ type: 'text', text: 'Hi', position: 'center' }] }],
@@ -266,7 +266,8 @@ describe('json2video', () => {
               scenes: expect.arrayContaining([
                 expect.objectContaining({
                   elements: expect.arrayContaining([
-                    expect.objectContaining({ width: 0, height: 0, zIndex: 0 }),
+                    // TextElement doesn't have width/height in schema, only zIndex gets defaulted
+                    expect.objectContaining({ zIndex: 0 }),
                   ]),
                 }),
               ]),

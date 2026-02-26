@@ -25,6 +25,7 @@ Generate videos from JSON configuration using `@napi-rs/canvas` (Skia) and `FFmp
 - **Local file support** — load assets from `file://`, `./relative`, or absolute paths
 - **GPU encoding** — auto-detect hardware encoder (VideoToolbox / NVENC / VAAPI / QSV)
 - **Audio waveform visualization** — animated bars, line, mirror, and circle styles from audio data
+- **Chroma key (green screen)** — remove background color from video elements with adjustable tolerance and edge softness
 
 ## Requirements
 
@@ -525,16 +526,45 @@ Gradient fill for text or shapes. Overrides solid `color` / `bgColor` when set.
 }
 ```
 
-| Field       | Type      | Default      | Description                                           |
-| ----------- | --------- | ------------ | ----------------------------------------------------- |
-| `url`       | `string`  | **required** | Video URL or local path                               |
-| `width`     | `number`  | **required** | Display width (px)                                    |
-| `height`    | `number`  | **required** | Display height (px)                                   |
-| `fit`       | `string`  | `"cover"`    | `"cover"` `"contain"` `"fill"`                        |
-| `trimStart` | `number`  | `0`          | Skip first N seconds                                  |
-| `speed`     | `number`  | `1`          | Playback speed. `0.5` = slow-mo, `1.5` = fast-forward |
-| `loop`      | `boolean` | `false`      | Loop video                                            |
-| `volume`    | `number`  |              | Audio volume of video element                         |
+| Field       | Type              | Default      | Description                                           |
+| ----------- | ----------------- | ------------ | ----------------------------------------------------- |
+| `url`       | `string`          | **required** | Video URL or local path                               |
+| `width`     | `number`          | **required** | Display width (px)                                    |
+| `height`    | `number`          | **required** | Display height (px)                                   |
+| `fit`       | `string`          | `"cover"`    | `"cover"` `"contain"` `"fill"`                        |
+| `trimStart` | `number`          | `0`          | Skip first N seconds                                  |
+| `speed`     | `number`          | `1`          | Playback speed. `0.5` = slow-mo, `1.5` = fast-forward |
+| `loop`      | `boolean`         | `false`      | Loop video                                            |
+| `volume`    | `number`          |              | Audio volume of video element                         |
+| `chromaKey` | `ChromaKeyConfig` |              | Chroma key (green screen removal)                     |
+
+#### Chroma Key (ChromaKeyConfig)
+
+Remove a background color from video frames (green screen / blue screen effect). The keyed pixels become transparent, allowing underlying layers to show through.
+
+```json
+{
+  "type": "video",
+  "url": "./greenscreen.mp4",
+  "width": 600,
+  "height": 800,
+  "position": "center",
+  "zIndex": 2,
+  "chromaKey": {
+    "color": "#00FF00",
+    "tolerance": 0.35,
+    "softness": 0.1
+  }
+}
+```
+
+| Field       | Type     | Default | Range | Description                                 |
+| ----------- | -------- | ------- | ----- | ------------------------------------------- |
+| `color`     | `string` |         |       | Key color to remove (hex, e.g. `"#00FF00"`) |
+| `tolerance` | `number` | `0.3`   | 0–1   | Color match range (higher = more removed)   |
+| `softness`  | `number` | `0.1`   | 0–1   | Edge feathering (higher = softer edges)     |
+
+> **Tip:** For standard green screen, use `"color": "#00FF00"` with `tolerance: 0.3–0.4`. For blue screen, use `"#0000FF"`. Adjust tolerance higher if residual color remains.
 
 ---
 

@@ -30,6 +30,7 @@ import type {
   BlendMode,
   CaptionDisplayMode,
   CaptionElement,
+  ChromaKeyConfig,
   ColorOverlayConfig,
   CounterConfig,
   ElementAnimation,
@@ -121,6 +122,7 @@ export type VideoOptions = ElementOptions & {
   freezeAt?: number;
   freezeDuration?: number;
   speedCurve?: SpeedCurvePoint[];
+  chromaKey?: ChromaKeyConfig;
 };
 
 /** Options riêng cho ShapeElement */

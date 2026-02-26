@@ -1,6 +1,6 @@
 ---
 name: qpv-json2video Video Scripter
-description: Generate professional video scripts in JSON format for the qpv-json2video library. Supports multi-track timeline, text/image/video/caption/svg/waveform elements, animations, keyframe animation with 13 easing functions, transitions, audio mixing, word-level karaoke highlighting, drop shadows, glow effects, gradients, video speed control, CSS-style visual filters (blur, brightness, contrast, etc.), blend modes, vignette, color overlay, rich text (multi-style segments), text background shapes (pill, banner, speech-bubble), counter/timer animation, ken burns effect (image pan+zoom), video crop/reverse/freeze-frame/speed-ramping, audio waveform visualization.
+description: Generate professional video scripts in JSON format for the qpv-json2video library. Supports multi-track timeline, text/image/video/caption/svg/waveform elements, animations, keyframe animation with 13 easing functions, transitions, audio mixing, word-level karaoke highlighting, drop shadows, glow effects, gradients, video speed control, CSS-style visual filters (blur, brightness, contrast, etc.), blend modes, vignette, color overlay, rich text (multi-style segments), text background shapes (pill, banner, speech-bubble), counter/timer animation, ken burns effect (image pan+zoom), video crop/reverse/freeze-frame/speed-ramping, audio waveform visualization, chroma key (green screen removal), masks & clipping (shape mask: circle/rect/star/polygon/ellipse, text mask: video/image inside text).
 ---
 
 # qpv-json2video Video Scripter
@@ -251,7 +251,32 @@ Check:
     { "time": 0, "opacity": 0, "scale": 0.5 },
     { "time": 0.5, "opacity": 1, "scale": 1, "easing": "easeOutBack" },
     { "time": 3, "offsetX": 200, "rotation": 45, "easing": "linear" }
-  ]
+  ],
+
+  // Mask — clip element to a shape or text (Phase 8)
+  // Element content only shows within the mask area
+  "mask": {
+    // Option 1: Shape mask (circle, rect, ellipse, star, polygon)
+    "type": "shape",
+    "shape": "circle", // "circle", "rect", "ellipse", "star", "polygon"
+    "radius": 200, // For circle/star/polygon
+    // "width": 400, "height": 300, // For rect/ellipse
+    // "borderRadius": 20, // For rect
+    // "points": 5, "innerRadius": 0.4, // For star
+    // "numSides": 6, // For polygon
+    "offsetX": 0, // Offset from element center
+    "offsetY": 0,
+    "invert": false // true = show outside mask
+
+    // Option 2: Text mask (content plays inside text)
+    // "type": "text",
+    // "text": "HELLO",
+    // "fontSize": 200,
+    // "fontFamily": "Bebas Neue",
+    // "fontWeight": "bold",
+    // "strokeWidth": 8, // Thicker text mask
+    // "letterSpacing": 5
+  }
 }
 ```
 
@@ -513,7 +538,16 @@ Keyframes let you animate **any property** over time with custom easing. When `k
     { "time": 2.5, "speed": 0.3 }, // Hold slow-mo
     { "time": 3.5, "speed": 2 }, // Ramp to fast forward
     { "time": 5, "speed": 2 } // Hold fast forward
-  ]
+  ],
+
+  // Chroma key (green screen removal)
+  // Removes a background color from each frame, making it transparent
+  // Transparent areas reveal layers below (background tracks)
+  "chromaKey": {
+    "color": "#00FF00", // Key color to remove (green screen = "#00FF00", blue screen = "#0000FF")
+    "tolerance": 0.35, // Optional: 0–1, how much color variation to remove (default: 0.3)
+    "softness": 0.1 // Optional: 0–1, edge feathering smoothness (default: 0.1)
+  }
 }
 ```
 
@@ -538,6 +572,62 @@ Keyframes let you animate **any property** over time with custom easing. When `k
 ```
 
 > 💡 `speedCurve` needs at least 2 points. Time values are in real playback seconds. The system uses trapezoidal integration to map real time to source video time for smooth variable-speed playback.
+
+**Chroma Key Patterns:**
+
+```json
+// Standard green screen removal
+"chromaKey": { "color": "#00FF00", "tolerance": 0.35, "softness": 0.1 }
+
+// Blue screen removal
+"chromaKey": { "color": "#0000FF", "tolerance": 0.3, "softness": 0.1 }
+
+// Aggressive removal (more color removed, softer edges)
+"chromaKey": { "color": "#00FF00", "tolerance": 0.5, "softness": 0.2 }
+
+// Precise removal (tight match, hard edges)
+"chromaKey": { "color": "#00FF00", "tolerance": 0.15, "softness": 0 }
+```
+
+> 💡 Chroma key works by comparing each pixel's color distance to the key color. Use `tolerance` to control how much variation is removed (higher = more aggressive). Use `softness` for smooth feathered edges. Place the video on a higher zIndex track, with background content on lower tracks.
+
+### Mask (Clipping)
+
+Masks clip element content to a shape or text. Any element type (image, video, shape, text) can have a mask.
+
+**Shape Mask Types:**
+
+| Shape       | Properties                        | Description                           |
+| ----------- | --------------------------------- | ------------------------------------- |
+| `"circle"`  | `radius`                          | Circular clip                         |
+| `"rect"`    | `width`, `height`, `borderRadius` | Rectangular clip (optionally rounded) |
+| `"ellipse"` | `width`, `height`                 | Elliptical clip                       |
+| `"star"`    | `radius`, `points`, `innerRadius` | Star shape clip                       |
+| `"polygon"` | `radius`, `numSides`              | Regular polygon clip                  |
+
+**Mask Patterns:**
+
+```json
+// Circle mask on image (avatar style)
+"mask": { "type": "shape", "shape": "circle", "radius": 200 }
+
+// Star mask
+"mask": { "type": "shape", "shape": "star", "radius": 150, "points": 5, "innerRadius": 0.4 }
+
+// Hexagon mask
+"mask": { "type": "shape", "shape": "polygon", "radius": 200, "numSides": 6 }
+
+// Rounded rectangle mask
+"mask": { "type": "shape", "shape": "rect", "width": 400, "height": 300, "borderRadius": 20 }
+
+// Text mask — video/image plays inside text (viral TikTok effect)
+"mask": { "type": "text", "text": "TRAVEL", "fontSize": 300, "fontWeight": "bold", "fontFamily": "Bebas Neue", "strokeWidth": 8 }
+
+// Inverted mask — show everything EXCEPT the mask area
+"mask": { "type": "shape", "shape": "circle", "radius": 200, "invert": true }
+```
+
+> 💡 Text mask is the most viral effect on TikTok/Shorts — video playing inside large text. Use bold fonts with large fontSize (200-400px) and `strokeWidth` to make text thicker. Combine with Ken Burns on images for cinematic "TRAVEL" / "DREAM" effects.
 
 ### SVG Element
 

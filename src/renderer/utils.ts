@@ -962,3 +962,92 @@ export function blendModeToComposite(mode: BlendMode): string {
   if (mode === 'normal') return 'source-over';
   return mode; // Tất cả blend mode names trùng với globalCompositeOperation
 }
+
+/**
+ * Parse hex color string → {r, g, b}
+ * Hỗ trợ: '#RGB', '#RRGGBB', '#RRGGBBAA'
+ */
+export function parseHexColor(hex: string): { r: number; g: number; b: number } {
+  let h = hex.replace('#', '');
+
+  // Short hex (#RGB → #RRGGBB)
+  if (h.length === 3) {
+    h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  }
+
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+
+  return { r: isNaN(r) ? 0 : r, g: isNaN(g) ? 0 : g, b: isNaN(b) ? 0 : b };
+}
+
+/**
+ * Apply chroma key (green screen removal) trên vùng canvas đã vẽ.
+ *
+ * Algorithm:
+ * 1. Đọc pixel data từ vùng element đã vẽ
+ * 2. Tính color distance (Euclidean) giữa mỗi pixel và key color
+ * 3. Nếu distance < tolerance → set alpha = 0 (transparent)
+ * 4. Nếu distance trong vùng softness → smooth alpha transition (feathering)
+ * 5. Ghi lại pixel data
+ *
+ * @param ctx - Canvas context
+ * @param x - Vị trí X vùng cần xử lý
+ * @param y - Vị trí Y vùng cần xử lý
+ * @param width - Chiều rộng vùng
+ * @param height - Chiều cao vùng
+ * @param keyColor - Màu cần xóa (hex string)
+ * @param tolerance - Độ khoan dung (0–1), mặc định 0.3
+ * @param softness - Độ mềm viền (0–1), mặc định 0.1
+ */
+export function applyChromaKey(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number,
+  width: number, height: number,
+  keyColor: string,
+  tolerance = 0.3,
+  softness = 0.1
+): void {
+  // Clamp vùng xử lý vào canvas bounds
+  const clampedX = Math.max(0, Math.round(x));
+  const clampedY = Math.max(0, Math.round(y));
+  const clampedW = Math.min(width, (ctx.canvas?.width ?? width) - clampedX);
+  const clampedH = Math.min(height, (ctx.canvas?.height ?? height) - clampedY);
+
+  if (clampedW <= 0 || clampedH <= 0) return;
+
+  const { r: keyR, g: keyG, b: keyB } = parseHexColor(keyColor);
+
+  // PERF: Dùng squared distance để tránh Math.sqrt trong hot loop
+  // Max distance² in RGB space = 255² × 3 = 195075
+  const maxDistSq = 195075;
+  const toleranceDistSq = (tolerance * tolerance) * maxDistSq;
+  const outerDistSq = ((tolerance + softness) * (tolerance + softness)) * maxDistSq;
+  const hasSoftness = softness > 0;
+
+  const imageData = ctx.getImageData(clampedX, clampedY, clampedW, clampedH);
+  const pixels = imageData.data;
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const dr = pixels[i] - keyR;
+    const dg = pixels[i + 1] - keyG;
+    const db = pixels[i + 2] - keyB;
+    const distSq = dr * dr + dg * dg + db * db;
+
+    if (distSq < toleranceDistSq) {
+      // Trong vùng tolerance → hoàn toàn transparent
+      pixels[i + 3] = 0;
+    } else if (hasSoftness && distSq < outerDistSq) {
+      // Trong vùng softness → smooth transition (chỉ dùng sqrt ở đây — ít pixels)
+      const dist = Math.sqrt(distSq);
+      const toleranceDist = Math.sqrt(toleranceDistSq);
+      const softnessDist = Math.sqrt(outerDistSq) - toleranceDist;
+      const alpha = (dist - toleranceDist) / softnessDist; // 0→1
+      pixels[i + 3] = Math.round(pixels[i + 3] * alpha);
+    }
+    // Ngoài vùng → giữ nguyên alpha
+  }
+
+  ctx.putImageData(imageData, clampedX, clampedY);
+}

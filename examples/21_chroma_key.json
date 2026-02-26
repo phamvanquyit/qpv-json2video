@@ -1,0 +1,348 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "title": "Scene 1 — Green Screen Before vs After",
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#1a0533",
+              "#0d1b2a"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "🎬 CHROMA KEY",
+              "fontSize": 64,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "Green Screen Removal",
+              "fontSize": 32,
+              "color": "#4ECDC4",
+              "position": "top-center",
+              "offsetY": 160,
+              "zIndex": 10
+            },
+            {
+              "type": "text",
+              "text": "▼ Original",
+              "fontSize": 22,
+              "color": "#888888",
+              "position": "center",
+              "offsetY": -420,
+              "zIndex": 10
+            },
+            {
+              "type": "video",
+              "url": "./scripts/assets/video/green_screen_1.mp4",
+              "width": 400,
+              "height": 400,
+              "position": "center",
+              "offsetY": -170,
+              "fit": "cover",
+              "borderRadius": 20,
+              "zIndex": 2,
+              "shadow": {
+                "color": "rgba(0,0,0,0.5)",
+                "blur": 20,
+                "offsetX": 0,
+                "offsetY": 8
+              }
+            },
+            {
+              "type": "text",
+              "text": "▼ chromaKey applied",
+              "fontSize": 22,
+              "color": "#4ECDC4",
+              "position": "center",
+              "offsetY": 80,
+              "zIndex": 10
+            },
+            {
+              "type": "video",
+              "url": "./scripts/assets/video/green_screen_1.mp4",
+              "width": 400,
+              "height": 400,
+              "position": "center",
+              "offsetY": 330,
+              "fit": "cover",
+              "borderRadius": 20,
+              "zIndex": 2,
+              "chromaKey": {
+                "color": "#00FF00",
+                "tolerance": 0.35,
+                "softness": 0.1
+              },
+              "shadow": {
+                "color": "rgba(78, 205, 196, 0.4)",
+                "blur": 25,
+                "offsetX": 0,
+                "offsetY": 0
+              }
+            },
+            {
+              "type": "text",
+              "text": "{ \"chromaKey\": { \"color\": \"#00FF00\" } }",
+              "fontSize": 20,
+              "fontFamily": "monospace",
+              "color": "#4ECDC4",
+              "bgColor": "rgba(0,0,0,0.6)",
+              "padding": 12,
+              "position": "bottom-center",
+              "offsetY": -60,
+              "zIndex": 10
+            }
+          ]
+        },
+        {
+          "title": "Scene 2 — Tolerance Comparison",
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#0d1b2a",
+              "#1b2838"
+            ],
+            "angle": 180
+          },
+          "transition": {
+            "type": "slideLeft",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "TOLERANCE",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 10
+            },
+            {
+              "type": "text",
+              "text": "Low → Medium → High",
+              "fontSize": 28,
+              "color": "#FFD700",
+              "position": "top-center",
+              "offsetY": 150,
+              "zIndex": 10
+            },
+            {
+              "type": "text",
+              "text": "0.15",
+              "fontSize": 26,
+              "fontFamily": "monospace",
+              "fontWeight": "bold",
+              "color": "#4ECDC4",
+              "position": "center",
+              "offsetX": -300,
+              "offsetY": -310,
+              "zIndex": 10
+            },
+            {
+              "type": "video",
+              "url": "./scripts/assets/video/green_screen_1.mp4",
+              "width": 300,
+              "height": 400,
+              "position": "center",
+              "offsetX": -300,
+              "offsetY": 0,
+              "fit": "cover",
+              "borderRadius": 16,
+              "zIndex": 2,
+              "chromaKey": {
+                "color": "#00FF00",
+                "tolerance": 0.15,
+                "softness": 0.05
+              }
+            },
+            {
+              "type": "text",
+              "text": "0.35",
+              "fontSize": 26,
+              "fontFamily": "monospace",
+              "fontWeight": "bold",
+              "color": "#FF6B6B",
+              "position": "center",
+              "offsetY": -310,
+              "offsetX": 0,
+              "zIndex": 10
+            },
+            {
+              "type": "video",
+              "url": "./scripts/assets/video/green_screen_1.mp4",
+              "width": 300,
+              "height": 400,
+              "position": "center",
+              "offsetX": 0,
+              "offsetY": 0,
+              "fit": "cover",
+              "borderRadius": 16,
+              "zIndex": 2,
+              "chromaKey": {
+                "color": "#00FF00",
+                "tolerance": 0.35,
+                "softness": 0.1
+              }
+            },
+            {
+              "type": "text",
+              "text": "0.60",
+              "fontSize": 26,
+              "fontFamily": "monospace",
+              "fontWeight": "bold",
+              "color": "#C084FC",
+              "position": "center",
+              "offsetY": -310,
+              "offsetX": 300,
+              "zIndex": 10
+            },
+            {
+              "type": "video",
+              "url": "./scripts/assets/video/green_screen_1.mp4",
+              "width": 300,
+              "height": 400,
+              "position": "center",
+              "offsetX": 300,
+              "offsetY": 0,
+              "fit": "cover",
+              "borderRadius": 16,
+              "zIndex": 2,
+              "chromaKey": {
+                "color": "#00FF00",
+                "tolerance": 0.60,
+                "softness": 0.15
+              }
+            },
+            {
+              "type": "text",
+              "text": "Higher tolerance = more green removed",
+              "fontSize": 22,
+              "color": "#888888",
+              "position": "bottom-center",
+              "offsetY": -80,
+              "zIndex": 10
+            }
+          ]
+        },
+        {
+          "title": "Scene 3 — Green Screen + Custom Background",
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#FF6B6B",
+              "#4ECDC4"
+            ],
+            "angle": 135
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.6
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "COMPOSITE",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 10
+            },
+            {
+              "type": "text",
+              "text": "Green screen → custom background",
+              "fontSize": 26,
+              "color": "rgba(255,255,255,0.8)",
+              "position": "top-center",
+              "offsetY": 150,
+              "zIndex": 10
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/1015/1080/1920.jpg",
+              "width": 1080,
+              "height": 1920,
+              "fit": "cover",
+              "position": "center",
+              "zIndex": 0
+            },
+            {
+              "type": "video",
+              "url": "./scripts/assets/video/green_screen_1.mp4",
+              "width": 600,
+              "height": 800,
+              "position": "center",
+              "offsetY": 100,
+              "fit": "cover",
+              "zIndex": 3,
+              "chromaKey": {
+                "color": "#00FF00",
+                "tolerance": 0.35,
+                "softness": 0.12
+              },
+              "shadow": {
+                "color": "rgba(0,0,0,0.6)",
+                "blur": 40,
+                "offsetX": 0,
+                "offsetY": 15
+              },
+              "keyframes": [
+                {
+                  "time": 0,
+                  "opacity": 0,
+                  "scale": 0.8
+                },
+                {
+                  "time": 0.6,
+                  "opacity": 1,
+                  "scale": 1.0,
+                  "easing": "easeOutBack"
+                },
+                {
+                  "time": 4,
+                  "scale": 1.02
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "chromaKey + image background + keyframes",
+              "fontSize": 20,
+              "fontFamily": "monospace",
+              "color": "#FFFFFF",
+              "bgColor": "rgba(0,0,0,0.6)",
+              "padding": 12,
+              "position": "bottom-center",
+              "offsetY": -60,
+              "zIndex": 10
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

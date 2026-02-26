@@ -229,8 +229,8 @@ function normalizeScenes(scenes: any[]): Scene[] {
     elements: scene.elements
       ? scene.elements.map((el: any) => ({
           ...el,
-          width: Number(el.width || 0),
-          height: Number(el.height || 0),
+          ...(el.width != null ? { width: Number(el.width) } : {}),
+          ...(el.height != null ? { height: Number(el.height) } : {}),
           zIndex: Number(el.zIndex || 0),
         }))
       : [],
