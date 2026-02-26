@@ -1,6 +1,6 @@
 {
   "name": "qpv-json2video",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Generate video from JSON config using @napi-rs/canvas (Skia) and FFmpeg",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
