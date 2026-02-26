@@ -188,4 +188,306 @@ describe('paintText', () => {
       }), canvasW, canvasH, 0, 5)).not.toThrow();
     });
   });
+
+  // ==================== Phase 6: Rich Text ====================
+  describe('richText', () => {
+    it('should render basic rich text', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [
+          { text: 'SALE ', color: '#FF0000', fontSize: 72 },
+          { text: '50% OFF', color: '#FFD700', fontSize: 96, fontWeight: 'bold' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with single segment', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [{ text: 'Hello World', color: '#FF0000' }],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with multiple segments', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [
+          { text: 'Normal ', fontSize: 36 },
+          { text: 'Bold ', fontWeight: 'bold', fontSize: 48 },
+          { text: 'Small', fontSize: 24, color: '#888' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with background highlight', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [
+          { text: 'Price: ', color: '#FFFFFF' },
+          { text: '$99.99', color: '#FFD700', bgColor: 'rgba(255,215,0,0.2)', fontSize: 64, fontWeight: 'bold' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with underline', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [
+          { text: 'Click ', color: '#FFFFFF' },
+          { text: 'here', color: '#00BFFF', underline: true },
+          { text: ' for more', color: '#FFFFFF' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with per-segment stroke', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [
+          { text: 'GLOW', color: '#00FF88', strokeColor: '#005533', strokeWidth: 3 },
+          { text: ' effect', color: '#FFFFFF' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with different font families', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [
+          { text: 'Serif ', fontFamily: 'serif', fontSize: 40 },
+          { text: 'Sans', fontFamily: 'sans-serif', fontSize: 40 },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with text align center', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        textAlign: 'center',
+        richText: [
+          { text: 'Centered ', color: '#FFFFFF' },
+          { text: 'rich text', color: '#FFD700', fontWeight: 'bold' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with text align right', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        textAlign: 'right',
+        richText: [
+          { text: 'Right ', color: '#FFFFFF' },
+          { text: 'aligned', color: '#FFD700' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with background', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        bgColor: 'rgba(0,0,0,0.7)',
+        borderRadius: 12,
+        richText: [
+          { text: 'With ', color: '#FFFFFF' },
+          { text: 'background', color: '#FFD700', fontWeight: 'bold' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render rich text with empty segments array', () => {
+      const ctx = createCtx();
+      // Should fall back to normal text when richText is empty
+      expect(() => paintText(ctx, makeTextElement({
+        richText: [],
+        text: 'Fallback text',
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+  });
+
+  // ==================== Phase 6: Text Background Shapes ====================
+  describe('bgShape', () => {
+    it.each(['rectangle', 'pill', 'banner', 'speech-bubble'] as const)(
+      'should render with bgShape=%s',
+      (bgShape) => {
+        const ctx = createCtx();
+        expect(() => paintText(ctx, makeTextElement({
+          bgColor: 'rgba(0,0,0,0.7)',
+          bgShape,
+        }), canvasW, canvasH, 0, 5)).not.toThrow();
+      }
+    );
+
+    it('should render pill shape with custom text', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        text: 'PREMIUM',
+        fontSize: 24,
+        bgColor: '#FFD700',
+        bgShape: 'pill',
+        padding: 15,
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render banner shape with large text', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        text: 'LIMITED OFFER',
+        fontSize: 48,
+        bgColor: '#FF0000',
+        bgShape: 'banner',
+        padding: 20,
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render speech-bubble with border radius', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        text: 'Hello there!',
+        fontSize: 32,
+        bgColor: '#FFFFFF',
+        color: '#000000',
+        bgShape: 'speech-bubble',
+        borderRadius: 16,
+        padding: 15,
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should not draw background shape when bgColor is not set', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        bgShape: 'pill',
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render bgShape with richText', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        bgColor: '#1a1a2e',
+        bgShape: 'pill',
+        richText: [
+          { text: 'HOT ', color: '#FF6B6B', fontWeight: 'bold' },
+          { text: 'DEAL', color: '#FFD700' },
+        ],
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+  });
+
+  // ==================== Phase 6: Counter Animation ====================
+  describe('counter', () => {
+    it('should render basic counter', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 100 },
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter with prefix', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 1000, prefix: '$' },
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter with suffix', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 100, suffix: '%' },
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter with prefix and suffix', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 999, prefix: '$', suffix: 'K' },
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter with decimals', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 99.99, decimals: 2, prefix: '$' },
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter counting down', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 100, to: 0 },
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter with custom duration', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 500, duration: 3 },
+      }), canvasW, canvasH, 1.5, 5)).not.toThrow();
+    });
+
+    it('should render counter with custom easing', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 1000, easing: 'linear' },
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter at time 0 (start value)', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 100, prefix: '$' },
+      }), canvasW, canvasH, 0, 5)).not.toThrow();
+    });
+
+    it('should render counter at end time (final value)', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 100, prefix: '$' },
+      }), canvasW, canvasH, 5, 5)).not.toThrow();
+    });
+
+    it('should render counter with thousand separator', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 1000000, thousandSep: true },
+      }), canvasW, canvasH, 5, 5)).not.toThrow();
+    });
+
+    it('should render counter without thousand separator', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 1000000, thousandSep: false },
+      }), canvasW, canvasH, 5, 5)).not.toThrow();
+    });
+
+    it('should render counter with bgShape pill', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 999, prefix: '$' },
+        bgColor: '#1a1a2e',
+        bgShape: 'pill',
+        fontSize: 72,
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+
+    it('should render counter with styling', () => {
+      const ctx = createCtx();
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 50000, prefix: '$', duration: 2, easing: 'easeOutBack' },
+        color: '#FFD700',
+        fontSize: 96,
+        fontWeight: 'bold',
+        glow: { color: '#FFD700', blur: 15 },
+        strokeColor: '#000',
+        strokeWidth: 2,
+      }), canvasW, canvasH, 1, 5)).not.toThrow();
+    });
+
+    it('counter should override richText', () => {
+      const ctx = createCtx();
+      // counter takes priority over richText
+      expect(() => paintText(ctx, makeTextElement({
+        counter: { from: 0, to: 100 },
+        richText: [{ text: 'This should not appear' }],
+      }), canvasW, canvasH, 2.5, 5)).not.toThrow();
+    });
+  });
 });

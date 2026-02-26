@@ -5,7 +5,7 @@ Generate videos from JSON configuration using `@napi-rs/canvas` (Skia) and `FFmp
 ## Features
 
 - **Multi-track timeline** — overlay multiple video/audio tracks with zIndex ordering
-- **5 element types** — Text, Image, Video, Caption (SRT subtitles), Shape (rectangle/circle/ellipse/line)
+- **7 element types** — Text, Image, Video, Caption, Shape, SVG, Waveform
 - **17 animations** — fadeIn, slideIn, zoomIn, bounce, pop, shake, typewriter, etc.
 - **11 scene transitions** — fade, slide, wipe, zoom (all directions)
 - **Drop shadow** — configurable shadow on any element
@@ -13,6 +13,10 @@ Generate videos from JSON configuration using `@napi-rs/canvas` (Skia) and `FFmp
 - **Gradient fill** — linear/radial gradients on text, shapes, and scene backgrounds
 - **Video speed control** — slow-mo (0.5x) to fast-forward (2x+)
 - **Element transform** — scale and rotation on any element
+- **Visual filters** — CSS-style filters on any element (blur, brightness, contrast, saturate, grayscale, sepia, hueRotate, invert)
+- **Blend modes** — 12 blend modes (multiply, screen, overlay, darken, lighten, etc.)
+- **Vignette** — darkened edges effect on scenes
+- **Color overlay** — semi-transparent color tinting on scenes with optional blend mode
 - **Positioning** — 9 preset positions + custom offset
 - **Google Fonts** — auto-download by font name
 - **Audio mixing** — multiple audio tracks per scene with volume, fade, loop, trim
@@ -20,6 +24,7 @@ Generate videos from JSON configuration using `@napi-rs/canvas` (Skia) and `FFmp
 - **Word-by-word display** — CapCut-style one-word-at-a-time captions with pop-in animation
 - **Local file support** — load assets from `file://`, `./relative`, or absolute paths
 - **GPU encoding** — auto-detect hardware encoder (VideoToolbox / NVENC / VAAPI / QSV)
+- **Audio waveform visualization** — animated bars, line, mirror, and circle styles from audio data
 
 ## Requirements
 
@@ -143,14 +148,16 @@ Track audio   [♪♪♪♪♪♪♪♪♪♪♪♪ BGM ♪♪♪♪♪♪♪♪
 
 ### Scene
 
-| Field        | Type                                   | Required | Default     | Description                                       |
-| ------------ | -------------------------------------- | -------- | ----------- | ------------------------------------------------- |
-| `duration`   | `number`                               | ✅       |             | Duration in seconds                               |
-| `bgColor`    | `string`                               |          | `"#000000"` | Background color                                  |
-| `bgGradient` | `{ colors: string[], angle?: number }` |          |             | Gradient background (overrides `bgColor` if set)  |
-| `elements`   | `SceneElement[]`                       |          | `[]`        | Visual elements                                   |
-| `audio`      | `AudioConfig \| AudioConfig[]`         |          |             | Scene audio (single or array for multi-track mix) |
-| `transition` | `SceneTransition`                      |          |             | Transition from previous scene                    |
+| Field          | Type                                   | Required | Default     | Description                                       |
+| -------------- | -------------------------------------- | -------- | ----------- | ------------------------------------------------- |
+| `duration`     | `number`                               | ✅       |             | Duration in seconds                               |
+| `bgColor`      | `string`                               |          | `"#000000"` | Background color                                  |
+| `bgGradient`   | `{ colors: string[], angle?: number }` |          |             | Gradient background (overrides `bgColor` if set)  |
+| `elements`     | `SceneElement[]`                       |          | `[]`        | Visual elements                                   |
+| `audio`        | `AudioConfig \| AudioConfig[]`         |          |             | Scene audio (single or array for multi-track mix) |
+| `transition`   | `SceneTransition`                      |          |             | Transition from previous scene                    |
+| `vignette`     | `VignetteConfig`                       |          |             | Darkened edges effect                             |
+| `colorOverlay` | `ColorOverlayConfig`                   |          |             | Semi-transparent color overlay                    |
 
 **bgGradient example:**
 
@@ -213,6 +220,8 @@ Transition effect applied at the start of a scene (animates from the previous sc
 | `duration`     | `number`           | scene duration | Display duration (seconds)           |
 | `animation`    | `ElementAnimation` |                | Animation effect                     |
 | `shadow`       | `ShadowConfig`     |                | Drop shadow                          |
+| `filters`      | `FilterConfig`     |                | CSS-style visual filters             |
+| `blendMode`    | `BlendMode`        | `"normal"`     | Blend mode (compositing operation)   |
 
 **PositionType values:**
 
@@ -251,6 +260,107 @@ Available on **all element types** via the `shadow` property.
 | `blur`    | `number` | Blur radius (px)                        |
 | `offsetX` | `number` | Horizontal offset (px)                  |
 | `offsetY` | `number` | Vertical offset (px)                    |
+
+---
+
+### Visual Filters (FilterConfig)
+
+CSS-style filters applied to individual elements via `ctx.filter`. All filter properties are optional.
+
+```json
+{
+  "filters": {
+    "blur": 3,
+    "brightness": 1.2,
+    "contrast": 1.1,
+    "saturate": 0.8,
+    "grayscale": 0.5,
+    "sepia": 0,
+    "hueRotate": 45,
+    "invert": 0
+  }
+}
+```
+
+| Field        | Type     | Default | Range | Description                |
+| ------------ | -------- | ------- | ----- | -------------------------- |
+| `blur`       | `number` | `0`     | 0+    | Gaussian blur radius (px)  |
+| `brightness` | `number` | `1`     | 0–2   | Brightness (0=black, 2=2x) |
+| `contrast`   | `number` | `1`     | 0–2   | Contrast level             |
+| `saturate`   | `number` | `1`     | 0–2   | Color saturation (0=gray)  |
+| `grayscale`  | `number` | `0`     | 0–1   | Grayscale amount           |
+| `sepia`      | `number` | `0`     | 0–1   | Sepia tone amount          |
+| `hueRotate`  | `number` | `0`     | 0–360 | Hue rotation (degrees)     |
+| `invert`     | `number` | `0`     | 0–1   | Color inversion amount     |
+
+> Filters can be combined — e.g. `{ "blur": 2, "brightness": 1.3, "sepia": 0.5 }` applies all three.
+
+---
+
+### Blend Modes
+
+Control how an element composites onto the canvas using `blendMode`.
+
+```json
+{ "blendMode": "screen" }
+```
+
+| Value         | Description                        |
+| ------------- | ---------------------------------- |
+| `normal`      | Default compositing (source-over)  |
+| `multiply`    | Darkens — colors multiply together |
+| `screen`      | Lightens — inverse multiply        |
+| `overlay`     | Combines multiply and screen       |
+| `darken`      | Keeps darker color                 |
+| `lighten`     | Keeps lighter color                |
+| `color-dodge` | Brightens to reflect source        |
+| `color-burn`  | Darkens to reflect source          |
+| `hard-light`  | Like overlay but based on source   |
+| `soft-light`  | Softer version of hard-light       |
+| `difference`  | Absolute difference between colors |
+| `exclusion`   | Like difference but lower contrast |
+
+---
+
+### Vignette (VignetteConfig)
+
+Darkened edges effect applied to entire scene, rendered after all elements.
+
+```json
+{
+  "vignette": {
+    "intensity": 0.6,
+    "size": 0.4,
+    "color": "#000000"
+  }
+}
+```
+
+| Field       | Type     | Default     | Description                          |
+| ----------- | -------- | ----------- | ------------------------------------ |
+| `intensity` | `number` | `0.5`       | Edge darkness (0=none, 1=fully dark) |
+| `size`      | `number` | `0.5`       | Bright center area (0=small, 1=full) |
+| `color`     | `string` | `"#000000"` | Vignette color                       |
+
+---
+
+### Color Overlay (ColorOverlayConfig)
+
+Semi-transparent color layer over entire scene, rendered after all elements and vignette.
+
+```json
+{
+  "colorOverlay": {
+    "color": "rgba(255,100,0,0.2)",
+    "blendMode": "normal"
+  }
+}
+```
+
+| Field       | Type        | Default    | Description                |
+| ----------- | ----------- | ---------- | -------------------------- |
+| `color`     | `string`    | _required_ | Color with alpha           |
+| `blendMode` | `BlendMode` | `"normal"` | Blend mode for the overlay |
 
 ---
 
@@ -610,6 +720,73 @@ Each word appears individually with a smooth scale pop-in effect (ease-out-back)
 | ------------ | --------------------------------------------- |
 | `sentence`   | Show full subtitle text (default)             |
 | `word`       | Show one word at a time with pop-in animation |
+
+---
+
+### Waveform Element (Audio Visualization)
+
+Visualize audio waveform data with animated bars, line, mirror, or circle styles. Audio data is extracted from the audio file via FFmpeg.
+
+```json
+{
+  "type": "waveform",
+  "audioUrl": "https://example.com/music.mp3",
+  "width": 800,
+  "height": 200,
+  "style": "bars",
+  "color": "#4ECDC4",
+  "barCount": 64,
+  "barGap": 2,
+  "barRadius": 3,
+  "sensitivity": 1.2,
+  "smoothing": 0.3,
+  "position": "bottom-center",
+  "zIndex": 1
+}
+```
+
+| Field            | Type             | Default      | Description                                    |
+| ---------------- | ---------------- | ------------ | ---------------------------------------------- |
+| `audioUrl`       | `string`         | **required** | Audio file URL or local path                   |
+| `width`          | `number`         | **required** | Display width (px)                             |
+| `height`         | `number`         | **required** | Display height (px)                            |
+| `style`          | `WaveformStyle`  | `"bars"`     | `"bars"` `"line"` `"mirror"` `"circle"`        |
+| `color`          | `string`         | `"#4ECDC4"`  | Waveform color                                 |
+| `secondaryColor` | `string`         |              | Fill below line (style `"line"` only)          |
+| `barCount`       | `number`         | `64`         | Number of bars (2–512)                         |
+| `barWidth`       | `number`         | auto         | Bar width (px), auto-calculated if not set     |
+| `barGap`         | `number`         | `2`          | Gap between bars (px)                          |
+| `barRadius`      | `number`         | `2`          | Bar corner radius (px)                         |
+| `lineWidth`      | `number`         | `2`          | Line thickness (style `"line"` only)           |
+| `sensitivity`    | `number`         | `1`          | Amplitude multiplier (>1 = louder visual)      |
+| `smoothing`      | `number`         | `0.3`        | Smoothing factor (0–1, higher = smoother)      |
+| `mirror`         | `boolean`        | `false`      | Mirror bars from center (use `"mirror"` style) |
+| `gradient`       | `GradientConfig` |              | Gradient fill (overrides solid `color`)        |
+
+**WaveformStyle values:**
+
+| Style    | Description                                   |
+| -------- | --------------------------------------------- |
+| `bars`   | Vertical bars growing from bottom (equalizer) |
+| `line`   | Continuous smooth line waveform               |
+| `mirror` | Mirrored bars from center (top + bottom)      |
+| `circle` | Circular waveform with bars from center       |
+
+**Examples:**
+
+```json
+// Gradient equalizer bars
+{ "type": "waveform", "audioUrl": "...", "style": "bars", "barCount": 48,
+  "gradient": { "type": "linear", "colors": ["#00FF88", "#00BFFF"] } }
+
+// Smooth line with fill area
+{ "type": "waveform", "audioUrl": "...", "style": "line", "color": "#FF6B6B",
+  "secondaryColor": "rgba(255,107,107,0.1)", "lineWidth": 3, "smoothing": 0.5 }
+
+// Circular spectrum
+{ "type": "waveform", "audioUrl": "...", "style": "circle", "barCount": 80,
+  "gradient": { "type": "linear", "colors": ["#a855f7", "#ec4899"] } }
+```
 
 ---
 

@@ -1,18 +1,22 @@
 import { Canvas, createCanvas } from '@napi-rs/canvas';
 import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
-import { Scene, SceneElement, Track, VideoConfig, VideoElement } from '../types';
+import { Scene, SceneElement, Track, VideoConfig, VideoElement, WaveformElement } from '../types';
 import { AssetLoader } from './asset-loader';
 import { paintCaption, clearCaptionCaches } from './element-painters/caption.painter';
 import { clearImageCache, paintImage } from './element-painters/image.painter';
 import { paintShape } from './element-painters/shape.painter';
 import { paintText } from './element-painters/text.painter';
+import { paintSvg, clearSvgCache } from './element-painters/svg.painter';
 import { paintVideoFrame, VideoFrameExtractor } from './element-painters/video.painter';
+import { paintWaveform, clearWaveformCache } from './element-painters/waveform.painter';
 import { loadGoogleFont } from './google-fonts';
 import {
-  computeElementAnimation, computeSceneTransition,
+  computeElementAnimation, computeKeyframeState, computeSceneTransition,
+  computePosition,
   isElementVisible, clearMeasureCache,
   createGradient,
-  ElementAnimationState,
+  buildFilterString, blendModeToComposite,
+  ElementAnimationState, KeyframeAnimationState,
 } from './utils';
 
 /**
@@ -98,6 +102,20 @@ export class CanvasRenderer {
                 // Collect video elements (cần xử lý tuần tự vì FFmpeg extract)
                 videoElements.push(element);
                 break;
+              case 'svg':
+                // Download SVG files song song (chỉ khi dùng URL)
+                if (element.url) {
+                  downloadPromises.push(
+                    this.assetLoader.downloadAsset(element.url, 'image').then(() => undefined)
+                  );
+                }
+                break;
+            case 'waveform':
+              // Download waveform audio files song song
+              downloadPromises.push(
+                this.assetLoader.downloadAsset(element.audioUrl, 'audio').then(() => undefined)
+              );
+              break;
             }
           }
         }
@@ -318,12 +336,22 @@ export class CanvasRenderer {
             continue;
           }
 
-          // Compute full animation state
-          const animState = computeElementAnimation(
-            element.animation, sceneTimeOffset,
-            element.start, element.duration, scene.duration,
-            canvasW, canvasH
-          );
+          // Compute animation state: keyframes override preset animation
+          let animState: ElementAnimationState;
+          let kfState: KeyframeAnimationState | null = null;
+
+          if (element.keyframes && element.keyframes.length > 0) {
+            // Keyframe animation — full control
+            kfState = computeKeyframeState(element.keyframes, sceneTimeOffset, element.start);
+            animState = kfState;
+          } else {
+            // Preset animation (backward compatible)
+            animState = computeElementAnimation(
+              element.animation, sceneTimeOffset,
+              element.start, element.duration, scene.duration,
+              canvasW, canvasH
+            );
+          }
 
           // Compute effective opacity: base * animation * scene transition
           const baseOpacity = element.opacity ?? 1;
@@ -332,31 +360,62 @@ export class CanvasRenderer {
 
           if (effectiveOpacity <= 0) continue;
 
+          // Apply keyframe overrides
+          let effectiveOffsetX = element.offsetX ?? 0;
+          let effectiveOffsetY = element.offsetY ?? 0;
+          let effectiveRotation = element.rotation ?? 0;
+
+          if (kfState) {
+            if (kfState.offsetXOverride !== undefined) effectiveOffsetX = kfState.offsetXOverride;
+            if (kfState.offsetYOverride !== undefined) effectiveOffsetY = kfState.offsetYOverride;
+            if (kfState.rotationOverride !== undefined) effectiveRotation = kfState.rotationOverride;
+          }
+
+          // For keyframes: create element copy with effective offsets so painters
+          // compute position correctly via computePosition() internally.
+          // This avoids using ctx.translate for offsets (which would get scaled).
+          let elementToPaint: typeof element = element;
+          if (kfState && (kfState.offsetXOverride !== undefined || kfState.offsetYOverride !== undefined)) {
+            elementToPaint = { ...element, offsetX: effectiveOffsetX, offsetY: effectiveOffsetY } as typeof element;
+          }
+
           // Check if we need canvas transform
+          const elScale = (element.scale ?? 1) * animState.scale;
           const needsTransform = animState.translateX !== 0 || animState.translateY !== 0 ||
-            animState.scale !== 1 || (element.scale && element.scale !== 1) ||
-            (element.rotation && element.rotation !== 0);
+            elScale !== 1 || effectiveRotation !== 0;
 
           if (needsTransform) {
             ctx.save();
 
-            // Apply animation translate
+            // Apply animation translate (for preset slide animations)
             if (animState.translateX !== 0 || animState.translateY !== 0) {
               ctx.translate(animState.translateX, animState.translateY);
             }
 
-            // Apply element scale + animation scale at canvas center
-            const elScale = (element.scale ?? 1) * animState.scale;
-            const elRotation = element.rotation ?? 0;
+            if (elScale !== 1 || effectiveRotation !== 0) {
+              // Compute pivot point for scale/rotation:
+              // - Keyframes: use element's computed position (zoom/rotate in-place)
+              // - Preset animations: use canvas center (backward compatible)
+              let pivotX: number;
+              let pivotY: number;
 
-            if (elScale !== 1 || elRotation !== 0) {
-              // Scale/rotate around canvas center for simplicity
-              const cx = canvasW / 2;
-              const cy = canvasH / 2;
-              ctx.translate(cx, cy);
+              if (kfState) {
+                // Element pivot = position point with effective offsets
+                const pivot = computePosition(
+                  element.position, canvasW, canvasH, 0, 0,
+                  effectiveOffsetX, effectiveOffsetY
+                );
+                pivotX = pivot.x;
+                pivotY = pivot.y;
+              } else {
+                pivotX = canvasW / 2;
+                pivotY = canvasH / 2;
+              }
+
+              ctx.translate(pivotX, pivotY);
               if (elScale !== 1) ctx.scale(elScale, elScale);
-              if (elRotation !== 0) ctx.rotate((elRotation * Math.PI) / 180);
-              ctx.translate(-cx, -cy);
+              if (effectiveRotation !== 0) ctx.rotate((effectiveRotation * Math.PI) / 180);
+              ctx.translate(-pivotX, -pivotY);
             }
           }
 
@@ -375,19 +434,82 @@ export class CanvasRenderer {
             ? baseOpacity * animState.opacity  // scene alpha already applied via ctx.save
             : effectiveOpacity;
 
-          await this.paintElement(ctx, element, sceneTimeOffset, scene.duration, sceneFrameOffset, animState);
+          // === Phase 5: Apply CSS filters ===
+          const hasFilters = element.filters && Object.keys(element.filters).length > 0;
+          if (hasFilters) {
+            if (!needsTransform && !shadow) ctx.save();
+            const filterStr = buildFilterString(element.filters!);
+            if (filterStr) {
+              ctx.filter = filterStr;
+            }
+          }
 
-          if (needsTransform || shadow) {
+          // === Phase 5: Apply blend mode ===
+          const hasBlendMode = element.blendMode && element.blendMode !== 'normal';
+          if (hasBlendMode) {
+            ctx.globalCompositeOperation = blendModeToComposite(element.blendMode!) as any;
+          }
+
+          await this.paintElement(ctx, elementToPaint, sceneTimeOffset, scene.duration, sceneFrameOffset, animState);
+
+          if (needsTransform || shadow || hasFilters) {
             ctx.restore();
+          }
+
+          // === Reset blend mode + filter ===
+          if (hasBlendMode) {
+            ctx.globalCompositeOperation = 'source-over';
+          }
+          if (hasFilters && !needsTransform && !shadow) {
+            // Already restored via ctx.restore above
           }
 
           // Restore alpha
           ctx.globalAlpha = 1;
+          // Reset filter (safety — in case save/restore didn't cover it)
+          ctx.filter = 'none';
         }
       }
 
       if (hasSceneTransform) {
         ctx.restore();
+      }
+
+      // === Phase 5: Vignette effect ===
+      if (scene.vignette) {
+        const vig = scene.vignette;
+        const intensity = vig.intensity ?? 0.5;
+        const size = vig.size ?? 0.5;
+        const vigColor = vig.color ?? '#000000';
+
+        // Parse base color for rgba gradient
+        // Vignette = radial gradient: transparent center → dark edges
+        const cx = canvasW / 2;
+        const cy = canvasH / 2;
+        const outerRadius = Math.sqrt(cx * cx + cy * cy);
+        const innerRadius = outerRadius * size;
+
+        const vigGrad = ctx.createRadialGradient(cx, cy, innerRadius, cx, cy, outerRadius);
+        vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        // Use the vignette color with intensity as alpha
+        vigGrad.addColorStop(1, vigColor === '#000000'
+          ? `rgba(0,0,0,${intensity})`
+          : vigColor);
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = vigGrad as unknown as string;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+      }
+
+      // === Phase 5: Color overlay ===
+      if (scene.colorOverlay) {
+        const overlay = scene.colorOverlay;
+        if (overlay.blendMode && overlay.blendMode !== 'normal') {
+          ctx.globalCompositeOperation = blendModeToComposite(overlay.blendMode) as any;
+        }
+        ctx.fillStyle = overlay.color;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.globalCompositeOperation = 'source-over';
       }
 
       // Restore global alpha after scene
@@ -416,10 +538,11 @@ export class CanvasRenderer {
         break;
 
       case 'image': {
-        // Tính timeInElement cho GIF animation
+        // Tính timeInElement cho GIF animation + Ken Burns
         const imgElStart = element.start ?? 0;
         const timeInImageElement = currentTime - imgElStart;
-        await paintImage(ctx, element, this.config.width, this.config.height, this.assetLoader, timeInImageElement);
+        const imgElDuration = element.duration ?? sceneDuration;
+        await paintImage(ctx, element, this.config.width, this.config.height, this.assetLoader, timeInImageElement, imgElDuration);
         break;
       }
 
@@ -443,6 +566,18 @@ export class CanvasRenderer {
       case 'shape':
         paintShape(ctx, element, this.config.width, this.config.height);
         break;
+
+      case 'svg':
+        await paintSvg(ctx, element, this.config.width, this.config.height, this.assetLoader);
+        break;
+
+      case 'waveform': {
+        const wfElStart = element.start ?? 0;
+        const timeInWfElement = currentTime - wfElStart;
+        const wfElDuration = element.duration ?? sceneDuration;
+        await paintWaveform(ctx, element, this.config.width, this.config.height, this.assetLoader, timeInWfElement, wfElDuration);
+        break;
+      }
     }
   }
 
@@ -524,8 +659,10 @@ export class CanvasRenderer {
     this.sortedElementsCache.clear();
     this.sceneTimeRanges.clear();
     clearImageCache();
+    clearSvgCache();
     // OPTIMIZATION: Clear module-level caches để tránh memory leak trên long-running server
     clearCaptionCaches();
     clearMeasureCache();
+    clearWaveformCache();
   }
 }

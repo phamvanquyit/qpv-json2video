@@ -1,6 +1,6 @@
 ---
 name: qpv-json2video Video Scripter
-description: Generate professional video scripts in JSON format for the qpv-json2video library. Supports multi-track timeline, text/image/video/caption elements, animations, transitions, audio mixing, word-level karaoke highlighting, drop shadows, glow effects, gradients, and video speed control.
+description: Generate professional video scripts in JSON format for the qpv-json2video library. Supports multi-track timeline, text/image/video/caption/svg/waveform elements, animations, keyframe animation with 13 easing functions, transitions, audio mixing, word-level karaoke highlighting, drop shadows, glow effects, gradients, video speed control, CSS-style visual filters (blur, brightness, contrast, etc.), blend modes, vignette, color overlay, rich text (multi-style segments), text background shapes (pill, banner, speech-bubble), counter/timer animation, ken burns effect (image pan+zoom), video crop/reverse/freeze-frame/speed-ramping, audio waveform visualization.
 ---
 
 # qpv-json2video Video Scripter
@@ -50,13 +50,15 @@ Each track contains scenes that play one after another. Scenes have:
 
 ### 3. Elements
 
-5 element types available:
+7 element types available:
 
 - **text** — Styled text with Google Fonts, stroke, background
-- **image** — Remote images with fit modes and border radius
-- **video** — Video clips with trim, loop, opacity
+- **image** — Remote images with fit modes, border radius, Ken Burns effect
+- **video** — Video clips with trim, loop, crop, reverse, freeze frame, speed ramping
 - **caption** — SRT subtitles with optional word-level karaoke highlighting
 - **shape** — Rectangles with fill, stroke (borders/frames), border radius
+- **svg** — Inline SVG strings or SVG file URLs with optional fill color override
+- **waveform** — Audio waveform/spectrum visualization with animated bars, line, mirror, or circle styles
 
 ### 4. Element Timing Within Scene
 
@@ -171,7 +173,18 @@ Check:
   },
   "elements": [], // Optional: visual elements
   "audio": {}, // Optional: AudioConfig
-  "transition": { "type": "fade", "duration": 0.8 } // Optional: transition from previous scene
+  "transition": { "type": "fade", "duration": 0.8 }, // Optional: transition from previous scene
+  "vignette": {
+    // Optional: darkened edges effect
+    "intensity": 0.5, // 0–1, how dark the edges get (default: 0.5)
+    "size": 0.5, // 0–1, size of bright center area (default: 0.5)
+    "color": "#000000" // Vignette color (default: black)
+  },
+  "colorOverlay": {
+    // Optional: semi-transparent color over entire scene
+    "color": "rgba(255,100,0,0.2)", // Color with alpha
+    "blendMode": "normal" // Optional: blend mode for overlay
+  }
 }
 ```
 
@@ -217,7 +230,28 @@ Check:
     "blur": 15, // Shadow blur radius (px)
     "offsetX": 5, // Horizontal offset (px)
     "offsetY": 5 // Vertical offset (px)
-  }
+  },
+  "filters": {
+    // Optional: CSS-style visual filters (applied to element rendering)
+    "blur": 3, // Gaussian blur (px), default: 0
+    "brightness": 1.2, // 0–2, default: 1 (0=black, 2=double bright)
+    "contrast": 1.1, // 0–2, default: 1
+    "saturate": 0.8, // 0–2, default: 1 (0=grayscale)
+    "grayscale": 0, // 0–1, default: 0 (1=fully gray)
+    "sepia": 0, // 0–1, default: 0 (1=fully sepia)
+    "hueRotate": 0, // 0–360°, default: 0
+    "invert": 0 // 0–1, default: 0 (1=fully inverted)
+  },
+  "blendMode": "normal", // Optional: how element composites onto canvas
+  // Values: "normal", "multiply", "screen", "overlay", "darken", "lighten",
+  //         "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion"
+  "keyframes": [
+    // Optional: keyframe animation (overrides "animation" preset when present)
+    // Animate ANY property over time with custom easing
+    { "time": 0, "opacity": 0, "scale": 0.5 },
+    { "time": 0.5, "opacity": 1, "scale": 1, "easing": "easeOutBack" },
+    { "time": 3, "offsetX": 200, "rotation": 45, "easing": "linear" }
+  ]
 }
 ```
 
@@ -246,17 +280,79 @@ Check:
 **PositionType values:**
 `"top-left"`, `"top-center"`, `"top-right"`, `"left"`, `"center"`, `"right"`, `"bottom-left"`, `"bottom-center"`, `"bottom-right"`
 
+### Keyframe Animation
+
+Keyframes let you animate **any property** over time with custom easing. When `keyframes` is set, it **overrides** the `animation` preset.
+
+**Keyframe Properties:**
+
+| Field      | Type         | Description                                                                         |
+| ---------- | ------------ | ----------------------------------------------------------------------------------- |
+| `time`     | `number`     | **Required.** Time in seconds from element start                                    |
+| `easing`   | `EasingType` | Easing for transition FROM previous keyframe TO this one. Default: `"easeOutCubic"` |
+| `opacity`  | `number`     | Opacity (0–1)                                                                       |
+| `scale`    | `number`     | Scale factor                                                                        |
+| `rotation` | `number`     | Rotation in degrees                                                                 |
+| `offsetX`  | `number`     | X offset from position (px)                                                         |
+| `offsetY`  | `number`     | Y offset from position (px)                                                         |
+
+**EasingType values:**
+
+| Type               | Description                              |
+| ------------------ | ---------------------------------------- |
+| `"linear"`         | Constant speed                           |
+| `"easeIn"`         | Accelerate (quadratic)                   |
+| `"easeOut"`        | Decelerate (quadratic)                   |
+| `"easeInOut"`      | Smooth start and end (quadratic)         |
+| `"easeInCubic"`    | Accelerate (cubic, stronger)             |
+| `"easeOutCubic"`   | Decelerate (cubic, default)              |
+| `"easeInOutCubic"` | Smooth start and end (cubic)             |
+| `"easeInBack"`     | Wind up then accelerate                  |
+| `"easeOutBack"`    | Overshoot then settle (great for pop-in) |
+| `"easeInOutBack"`  | Wind up + overshoot                      |
+| `"easeOutBounce"`  | Bounce at end                            |
+| `"easeOutElastic"` | Springy oscillation                      |
+| `"spring"`         | Damped spring oscillation                |
+
+**Common Keyframe Patterns:**
+
+```json
+// Fade in with pop
+"keyframes": [
+  { "time": 0, "opacity": 0, "scale": 0.5 },
+  { "time": 0.5, "opacity": 1, "scale": 1, "easing": "easeOutBack" }
+]
+
+// Slide from left to right
+"keyframes": [
+  { "time": 0, "offsetX": -200, "opacity": 0 },
+  { "time": 0.8, "offsetX": 0, "opacity": 1, "easing": "easeOutCubic" }
+]
+
+// Complex: pop in → float up → rotate → fade out
+"keyframes": [
+  { "time": 0, "opacity": 0, "scale": 0, "rotation": -30 },
+  { "time": 0.4, "opacity": 1, "scale": 1.2, "rotation": 0, "easing": "easeOutBack" },
+  { "time": 1, "scale": 1, "offsetY": -50, "easing": "easeOutCubic" },
+  { "time": 4, "offsetY": -100, "easing": "linear" },
+  { "time": 4.5, "opacity": 0, "easing": "easeIn" }
+]
+```
+
+> 💡 Properties not defined in a keyframe **hold their last value**. Only set properties you want to change.
+
 ### Text Element
 
 ```json
 {
   "type": "text",
-  "text": "Hello World", // Required
+  "text": "Hello World", // Required (ignored when richText or counter is set)
   "fontFamily": "Orbitron", // Optional: auto Google Fonts (default: "sans-serif")
   "fontSize": 48, // Optional: default 48
   "fontWeight": "bold", // Optional: "bold", 700, "normal" (default: 400)
   "color": "#FFFFFF", // Optional: default "#FFFFFF"
   "bgColor": "rgba(0,0,0,0.5)", // Optional: text box background
+  "bgShape": "rectangle", // Optional: "rectangle", "pill", "banner", "speech-bubble" (default: "rectangle")
   "maxWidth": "80%", // Optional: number or "80%" (default: 90% canvas)
   "textAlign": "center", // Optional: "left", "center", "right" (default: "left")
   "strokeColor": "#000000", // Optional: text outline color
@@ -274,10 +370,62 @@ Check:
     "colors": ["#FF6B6B", "#4ECDC4"], // At least 2 colors
     "angle": 0 // Degrees (linear only)
   },
+
+  // Rich text — multi-style text (overrides "text" field)
+  "richText": [
+    { "text": "SALE ", "color": "#FF0000", "fontSize": 72 },
+    {
+      "text": "50% OFF",
+      "color": "#FFD700",
+      "fontSize": 96,
+      "fontWeight": "bold",
+      "underline": true, // Optional
+      "bgColor": "rgba(255,215,0,0.2)", // Optional: segment highlight
+      "strokeColor": "#000", // Optional: per-segment stroke
+      "strokeWidth": 2 // Optional: per-segment stroke width
+    }
+  ],
+
+  // Counter animation — animated number counting (overrides "text" field)
+  "counter": {
+    "from": 0, // Start value
+    "to": 1000, // End value
+    "duration": 2, // Optional: counting duration in seconds (default: element duration)
+    "prefix": "$", // Optional: prefix before number
+    "suffix": "K", // Optional: suffix after number
+    "decimals": 0, // Optional: decimal places (default: 0)
+    "thousandSep": true, // Optional: comma separator (default: true)
+    "easing": "easeOutCubic" // Optional: easing for count animation (default: "easeOutCubic")
+  },
+
   "position": "center",
   "zIndex": 1
 }
 ```
+
+**Text Background Shapes (`bgShape`):**
+
+| Shape             | Description                                     |
+| ----------------- | ----------------------------------------------- |
+| `"rectangle"`     | Standard rectangle (default, uses borderRadius) |
+| `"pill"`          | Fully rounded ends (borderRadius = height/2)    |
+| `"banner"`        | Ribbon banner with angled edges                 |
+| `"speech-bubble"` | Rounded rect with triangle tail at bottom       |
+
+**Rich Text Segment Properties:**
+
+| Field         | Type             | Description                         |
+| ------------- | ---------------- | ----------------------------------- |
+| `text`        | `string`         | **Required.** Segment text content  |
+| `color`       | `string`         | Text color (inherits from element)  |
+| `fontSize`    | `number`         | Font size (inherits from element)   |
+| `fontWeight`  | `string\|number` | Font weight (inherits from element) |
+| `fontFamily`  | `string`         | Font family (inherits from element) |
+| `italic`      | `boolean`        | Italic text (default: false)        |
+| `underline`   | `boolean`        | Underline text (default: false)     |
+| `bgColor`     | `string`         | Segment background highlight        |
+| `strokeColor` | `string`         | Per-segment stroke color            |
+| `strokeWidth` | `number`         | Per-segment stroke width            |
 
 ### Image Element
 
@@ -289,9 +437,39 @@ Check:
   "height": 400, // Required: display height (px)
   "fit": "cover", // Optional: "cover", "contain", "fill" (default: "cover")
   "position": "center",
-  "zIndex": 1
+  "zIndex": 1,
+
+  // Ken Burns effect — smooth continuous pan+zoom on static images
+  // Creates cinematic camera movement (documentary-style)
+  "kenBurns": {
+    "startX": 0, // Start pan X position (0-100%, 0=left, 100=right). Default: 50
+    "startY": 0, // Start pan Y position (0-100%, 0=top, 100=bottom). Default: 50
+    "startZoom": 1.3, // Start zoom level (1=normal, 1.5=150%). Default: 1.2
+    "endX": 100, // End pan X position (0-100%). Default: 50
+    "endY": 50, // End pan Y position (0-100%). Default: 50
+    "endZoom": 1.0, // End zoom level. Default: 1.0
+    "easing": "easeInOut" // Easing function. Default: "easeInOut"
+  }
 }
 ```
+
+**Ken Burns Patterns:**
+
+```json
+// Zoom out + pan right (classic documentary)
+"kenBurns": { "startX": 0, "startY": 0, "startZoom": 1.5, "endX": 100, "endY": 50, "endZoom": 1.0 }
+
+// Slow zoom into center (dramatic focus)
+"kenBurns": { "startZoom": 1.0, "endZoom": 1.6, "easing": "easeInOut" }
+
+// Diagonal pan (constant zoom)
+"kenBurns": { "startX": 0, "startY": 0, "startZoom": 1.3, "endX": 100, "endY": 100, "endZoom": 1.3, "easing": "linear" }
+
+// Zoom out reveal
+"kenBurns": { "startZoom": 2.0, "endZoom": 1.0, "easing": "easeOutCubic" }
+```
+
+> 💡 Ken Burns runs for the entire element duration. Set `duration` on the element to control how long the effect lasts. Works best with high-resolution images.
 
 ### Video Element
 
@@ -305,11 +483,156 @@ Check:
   "trimStart": 0, // Optional: skip first N seconds (default: 0)
   "loop": false, // Optional: loop video (default: false)
   "volume": 0.5, // Optional: audio volume
-  "speed": 1, // Optional: playback speed (0.5=slow-mo, 2=fast-forward, default: 1)
+  "speed": 1, // Optional: constant playback speed (0.5=slow-mo, 2=fast-forward, default: 1)
   "position": "center",
-  "zIndex": 0
+  "zIndex": 0,
+
+  // === Phase 7: Advanced Video Processing ===
+
+  // Crop — show only a region of the source video
+  "crop": {
+    "x": 100, // Crop start X (px)
+    "y": 0, // Crop start Y (px)
+    "width": 800, // Crop width (px)
+    "height": 800 // Crop height (px)
+  },
+
+  // Reverse — play video backwards
+  "reverse": true, // Optional: default false
+
+  // Freeze frame — freeze at a specific time in source video
+  "freezeAt": 3.5, // Optional: time in source video to freeze (seconds)
+  "freezeDuration": 2, // Optional: how long to show frozen frame (default: element duration)
+
+  // Speed ramping — variable speed changes over time
+  // When set, overrides the constant "speed" field
+  // System interpolates linearly between points
+  "speedCurve": [
+    { "time": 0, "speed": 1 }, // Start at normal speed
+    { "time": 1, "speed": 0.3 }, // Slow motion at 1s
+    { "time": 2.5, "speed": 0.3 }, // Hold slow-mo
+    { "time": 3.5, "speed": 2 }, // Ramp to fast forward
+    { "time": 5, "speed": 2 } // Hold fast forward
+  ]
 }
 ```
+
+**Video Processing Patterns:**
+
+```json
+// Dramatic slow-mo to fast transition
+"speedCurve": [
+  { "time": 0, "speed": 0.3 },
+  { "time": 2, "speed": 0.3 },
+  { "time": 3, "speed": 2 }
+]
+
+// Reverse playback
+"reverse": true
+
+// Freeze at dramatic moment
+"freezeAt": 2.5
+
+// Crop square from wide video
+"crop": { "x": 380, "y": 0, "width": 1080, "height": 1080 }
+```
+
+> 💡 `speedCurve` needs at least 2 points. Time values are in real playback seconds. The system uses trapezoidal integration to map real time to source video time for smooth variable-speed playback.
+
+### SVG Element
+
+```json
+{
+  "type": "svg",
+  // Option 1: Inline SVG string
+  "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='red'/></svg>",
+  // Option 2: URL to SVG file (ignored when svgContent is set)
+  // "url": "https://example.com/icon.svg",
+  "width": 200, // Required: display width (px)
+  "height": 200, // Required: display height (px)
+  "fit": "contain", // Optional: "cover", "contain", "fill" (default: "contain")
+  "fillColor": "#FFD700", // Optional: override fill color of SVG paths
+  "position": "center",
+  "zIndex": 1
+}
+```
+
+**SVG Use Cases:**
+
+- **Icons**: Material Design, Feather, custom SVG icons
+- **Logos**: Vector logos that scale without blur
+- **Decorations**: Complex shapes, patterns, ornaments
+- **Charts**: Inline generated SVG charts/graphs
+
+> 💡 SVG must have `xmlns='http://www.w3.org/2000/svg'`. Use `viewBox` for proper scaling. `fillColor` does a global replace on fill attributes — works best with single-color icons.
+
+### Waveform Element (Audio Visualization)
+
+```json
+{
+  "type": "waveform",
+  "audioUrl": "https://example.com/music.mp3", // Required: audio file URL
+  "width": 800, // Required: display width (px)
+  "height": 200, // Required: display height (px)
+  "style": "bars", // Optional: "bars", "line", "mirror", "circle" (default: "bars")
+  "color": "#4ECDC4", // Optional: waveform color (default: "#4ECDC4")
+  "secondaryColor": "rgba(78,205,196,0.15)", // Optional: fill below line (style "line" only)
+  "barCount": 64, // Optional: number of bars (default: 64, max: 512)
+  "barWidth": null, // Optional: bar width (px), auto-calculated if not set
+  "barGap": 2, // Optional: gap between bars (px, default: 2)
+  "barRadius": 2, // Optional: bar corner radius (px, default: 2)
+  "lineWidth": 2, // Optional: line thickness for "line" style (default: 2)
+  "sensitivity": 1, // Optional: amplitude multiplier (default: 1, >1 = louder visual)
+  "smoothing": 0.3, // Optional: smoothing factor 0-1 (default: 0.3, higher = smoother)
+  "mirror": false, // Optional: mirror bars top+bottom (default: false)
+  "gradient": {
+    // Optional: gradient fill (replaces solid color)
+    "type": "linear",
+    "colors": ["#FF6B6B", "#4ECDC4"],
+    "angle": 90
+  },
+  "position": "bottom-center",
+  "zIndex": 1
+}
+```
+
+**WaveformStyle values:**
+
+| Style      | Description                                         |
+| ---------- | --------------------------------------------------- |
+| `"bars"`   | Vertical bars growing from bottom (equalizer-style) |
+| `"line"`   | Continuous smooth line waveform                     |
+| `"mirror"` | Mirrored bars extending from center (top + bottom)  |
+| `"circle"` | Circular waveform with bars emanating from center   |
+
+**Waveform Patterns:**
+
+```json
+// Neon equalizer bars with gradient
+{
+  "type": "waveform", "audioUrl": "...",
+  "style": "bars", "barCount": 48, "barRadius": 4,
+  "gradient": { "type": "linear", "colors": ["#00FF88", "#00BFFF"] },
+  "sensitivity": 1.3
+}
+
+// Smooth line with fill
+{
+  "type": "waveform", "audioUrl": "...",
+  "style": "line", "color": "#FF6B6B",
+  "secondaryColor": "rgba(255,107,107,0.1)",
+  "lineWidth": 3, "smoothing": 0.5
+}
+
+// Circular spectrum
+{
+  "type": "waveform", "audioUrl": "...",
+  "style": "circle", "barCount": 80,
+  "gradient": { "type": "linear", "colors": ["#a855f7", "#ec4899"] }
+}
+```
+
+> 💡 The waveform animates based on the actual audio data extracted via FFmpeg. The visualization window follows playback position. Use `sensitivity` to amplify quiet audio and `smoothing` for visual smoothness.
 
 ### Shape Element (Rectangles, Frames)
 
@@ -455,6 +778,8 @@ Check:
 - Use `typewriter` for narration text or quote reveals
 - Don't animate everything — reserve for emphasis
 - `scale: 1.5` + `rotation: -5` creates dynamic tilted-zoom effects
+- Use `keyframes` for complex multi-stage animations (pop in → float → fade out)
+- Prefer `"easeOutBack"` easing for pop-in effects, `"easeOutCubic"` for slides, `"linear"` for slow drifts
 
 ### Transitions
 
@@ -464,6 +789,19 @@ Check:
 - Use `zoomIn` for dramatic scene changes
 - Use `wipeLeft` for cinematic reveals
 - Not every scene needs a transition — use for mood/topic changes
+
+### Filters & Blend Modes
+
+- Use `filters.blur` on background video elements for a bokeh/depth-of-field effect: `{ "blur": 5, "brightness": 0.8 }`
+- Use `filters.grayscale: 1` for dramatic black-and-white effects
+- Use `filters.sepia: 0.7` for a warm vintage look
+- Use `filters.brightness: 1.3` + `filters.contrast: 1.2` to make images pop
+- Use `filters.hueRotate` to shift colors for creative effects
+- Use `blendMode: "screen"` for light-themed overlays (makes dark areas transparent)
+- Use `blendMode: "multiply"` for dark-themed overlays (makes light areas transparent)
+- Use `blendMode: "overlay"` for high-contrast composite effects
+- Use `vignette` on scenes for cinematic feel: `{ "intensity": 0.6, "size": 0.4 }`
+- Use `colorOverlay` for mood tinting: `{ "color": "rgba(0,0,100,0.15)" }` for blue tint
 
 ### Audio
 

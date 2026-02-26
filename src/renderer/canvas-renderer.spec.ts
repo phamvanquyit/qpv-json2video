@@ -677,4 +677,263 @@ describe('CanvasRenderer', () => {
       renderer.cleanup();
     });
   });
+
+  // ========================
+  // Phase 5: Filters & Effects
+  // ========================
+
+  describe('filters (Phase 5)', () => {
+    it('should render element with blur filter', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          filters: { blur: 2 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with brightness filter', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#808080',
+          position: 'center' as const, zIndex: 1,
+          filters: { brightness: 1.5 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with grayscale filter', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          filters: { grayscale: 1 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with combined filters', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#ff0000',
+          position: 'center' as const, zIndex: 1,
+          filters: { blur: 1, brightness: 1.2, contrast: 1.3, saturate: 0.5 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render text element with sepia filter', async () => {
+      const config = singleTrackConfig(50, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'text', text: 'Sepia', fontSize: 10, color: '#FFF',
+          position: 'center', zIndex: 1,
+          filters: { sepia: 0.8 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with filters + shadow combined', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#0000ff',
+          position: 'center' as const, zIndex: 1,
+          filters: { blur: 1 },
+          shadow: { color: '#ff0000', blur: 5, offsetX: 2, offsetY: 2 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with filters + scale/rotation', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        elements: [{
+          type: 'shape' as const, width: 8, height: 8, bgColor: '#00ff00',
+          position: 'center' as const, zIndex: 1, scale: 1.5, rotation: 45,
+          filters: { hueRotate: 180, invert: 0.5 },
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should handle empty filters object (no-op)', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#ff0000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#00ff00',
+          position: 'center' as const, zIndex: 1,
+          filters: {},
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
+
+  // ========================
+  // Phase 5: Blend Modes
+  // ========================
+
+  describe('blend modes (Phase 5)', () => {
+    it('should render element with screen blend mode', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#ff0000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#00ff00',
+          position: 'center' as const, zIndex: 1,
+          blendMode: 'screen' as const,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Screen blend: brighter result
+      const idx = (5 * 10 + 5) * 4;
+      expect(frame[idx] + frame[idx + 1]).toBeGreaterThan(200);
+      renderer.cleanup();
+    });
+
+    it('should render element with multiply blend mode', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#ffffff',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#808080',
+          position: 'center' as const, zIndex: 1,
+          blendMode: 'multiply' as const,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render element with filters + blend mode combined', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#ff0000',
+        elements: [{
+          type: 'shape' as const, width: 10, height: 10, bgColor: '#00ff00',
+          position: 'center' as const, zIndex: 1,
+          filters: { brightness: 1.5 },
+          blendMode: 'overlay' as const,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
+
+  // ========================
+  // Phase 5: Vignette
+  // ========================
+
+  describe('vignette (Phase 5)', () => {
+    it('should render scene with vignette', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#ffffff',
+        vignette: { intensity: 0.7, size: 0.4 },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center should be brighter than corners
+      const center = (10 * 20 + 10) * 4;
+      const corner = 0; // top-left pixel
+      expect(frame[center]).toBeGreaterThanOrEqual(frame[corner]);
+      renderer.cleanup();
+    });
+
+    it('should render vignette with custom color', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#ffffff',
+        vignette: { intensity: 0.8, size: 0.3, color: '#000000' },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render vignette with elements', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#000',
+        vignette: { intensity: 0.5 },
+        elements: [{
+          type: 'text', text: 'V', fontSize: 8, color: '#FFF',
+          position: 'center', zIndex: 1,
+        }],
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
+
+  // ========================
+  // Phase 5: Color Overlay
+  // ========================
+
+  describe('colorOverlay (Phase 5)', () => {
+    it('should render scene with color overlay', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#ffffff',
+        colorOverlay: { color: 'rgba(255,0,0,0.5)' },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      const frame = await renderer.renderFrame(0);
+      expect(Buffer.isBuffer(frame)).toBe(true);
+      // Center pixel should have red tint
+      const idx = (5 * 10 + 5) * 4;
+      expect(frame[idx]).toBeGreaterThan(200); // R
+      renderer.cleanup();
+    });
+
+    it('should render color overlay with blend mode', async () => {
+      const config = singleTrackConfig(10, 10, [{
+        duration: 1, bgColor: '#ff0000',
+        colorOverlay: { color: 'rgba(0,0,255,0.5)', blendMode: 'screen' as const },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+
+    it('should render vignette + colorOverlay combined', async () => {
+      const config = singleTrackConfig(20, 20, [{
+        duration: 1, bgColor: '#ffffff',
+        vignette: { intensity: 0.5, size: 0.5 },
+        colorOverlay: { color: 'rgba(255,200,0,0.2)' },
+      }]);
+      const renderer = new CanvasRenderer(config, 10);
+      expect(Buffer.isBuffer(await renderer.renderFrame(0))).toBe(true);
+      renderer.cleanup();
+    });
+  });
 });

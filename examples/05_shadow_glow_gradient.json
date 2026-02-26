@@ -1,0 +1,218 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "elements": [
+            {
+              "type": "text",
+              "text": "DROP SHADOW",
+              "fontSize": 64,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -300,
+              "zIndex": 1,
+              "shadow": {
+                "color": "rgba(255,107,107,0.8)",
+                "blur": 30,
+                "offsetX": 0,
+                "offsetY": 10
+              }
+            },
+            {
+              "type": "shape",
+              "width": 400,
+              "height": 250,
+              "bgColor": "#4ECDC4",
+              "borderRadius": 20,
+              "position": "center",
+              "offsetY": -50,
+              "zIndex": 1,
+              "shadow": {
+                "color": "rgba(0,0,0,0.6)",
+                "blur": 25,
+                "offsetX": 5,
+                "offsetY": 15
+              }
+            },
+            {
+              "type": "text",
+              "text": "NEON GLOW ✨",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "color": "#00FF88",
+              "position": "center",
+              "offsetY": 200,
+              "zIndex": 1,
+              "glow": {
+                "color": "#00FF88",
+                "blur": 25
+              }
+            },
+            {
+              "type": "text",
+              "text": "Glow + Shadow",
+              "fontSize": 44,
+              "fontFamily": "Orbitron",
+              "color": "#FF69B4",
+              "position": "center",
+              "offsetY": 350,
+              "zIndex": 1,
+              "glow": {
+                "color": "#FF69B4",
+                "blur": 20
+              },
+              "shadow": {
+                "color": "rgba(0,0,0,0.5)",
+                "blur": 15,
+                "offsetX": 0,
+                "offsetY": 8
+              }
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "GRADIENT TEXT",
+              "fontSize": 56,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "position": "center",
+              "offsetY": -300,
+              "zIndex": 1,
+              "gradient": {
+                "type": "linear",
+                "colors": [
+                  "#FF6B6B",
+                  "#4ECDC4"
+                ],
+                "angle": 0
+              }
+            },
+            {
+              "type": "text",
+              "text": "3 COLOR GRADIENT",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "position": "center",
+              "offsetY": -150,
+              "zIndex": 1,
+              "gradient": {
+                "type": "linear",
+                "colors": [
+                  "#FFD700",
+                  "#FF6B6B",
+                  "#4ECDC4"
+                ],
+                "angle": 90
+              }
+            },
+            {
+              "type": "text",
+              "text": "RADIAL GRADIENT",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "position": "center",
+              "zIndex": 1,
+              "gradient": {
+                "type": "radial",
+                "colors": [
+                  "#FFD700",
+                  "#FF6B35"
+                ]
+              }
+            },
+            {
+              "type": "shape",
+              "width": 600,
+              "height": 300,
+              "gradient": {
+                "type": "linear",
+                "colors": [
+                  "#667eea",
+                  "#764ba2"
+                ],
+                "angle": 135
+              },
+              "borderRadius": 20,
+              "position": "center",
+              "offsetY": 250,
+              "zIndex": 1,
+              "shadow": {
+                "color": "rgba(0,0,0,0.4)",
+                "blur": 20,
+                "offsetX": 0,
+                "offsetY": 10
+              }
+            },
+            {
+              "type": "text",
+              "text": "Shape Gradient ↑",
+              "fontSize": 32,
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": 250,
+              "zIndex": 2
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "bgGradient": {
+            "colors": [
+              "#0f0c29",
+              "#302b63",
+              "#24243e"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "SCENE BG GRADIENT",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 1,
+              "strokeColor": "#000000",
+              "strokeWidth": 3
+            },
+            {
+              "type": "text",
+              "text": "3-color scene background\ngradient at 135°",
+              "fontSize": 28,
+              "color": "#CCCCCC",
+              "textAlign": "center",
+              "position": "center",
+              "offsetY": 50,
+              "zIndex": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

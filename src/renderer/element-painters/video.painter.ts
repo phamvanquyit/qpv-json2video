@@ -169,6 +169,8 @@ export class VideoFrameExtractor {
  * @param frameIndex - Frame index trong video source (bắt đầu từ 1)
  *
  * OPTIMIZATION: Sử dụng cached Image từ VideoFrameExtractor
+ *
+ * Phase 7: Hỗ trợ crop, reverse, freeze frame, speed ramping
  */
 export async function paintVideoFrame(
   ctx: CanvasRenderingContext2D,
@@ -178,24 +180,48 @@ export async function paintVideoFrame(
   extractor: VideoFrameExtractor,
   frameIndex: number
 ): Promise<void> {
-  const { width, height, position = 'center', fit = 'cover', offsetX = 0, offsetY = 0, borderRadius = 0, loop = false, opacity = 1, trimStart = 0, speed = 1 } = element;
+  const {
+    width, height, position = 'center', fit = 'cover',
+    offsetX = 0, offsetY = 0, borderRadius = 0, loop = false,
+    opacity = 1, trimStart = 0, speed = 1,
+    // Phase 7 fields
+    crop, reverse = false, freezeAt, freezeDuration, speedCurve,
+  } = element;
 
-  // Handle speed: multiply frame index to change playback rate
-  // speed=2 → skip every other frame (fast forward)
-  // speed=0.5 → repeat frames (slow motion)
-  const speedAdjustedFrame = Math.round(frameIndex * speed);
-
-  // Handle loop + trimStart: offset frame index
-  let actualFrameIndex = speedAdjustedFrame + Math.round(trimStart * extractor['fps']);
   const totalFrames = extractor.getTotalFrames();
-
   if (totalFrames === 0) return;
 
-  if (loop && speedAdjustedFrame > totalFrames) {
-    actualFrameIndex = ((speedAdjustedFrame - 1) % totalFrames) + 1 + Math.round(trimStart * extractor['fps']);
-  } else if (speedAdjustedFrame > totalFrames) {
-    actualFrameIndex = totalFrames; // Freeze last frame
+  const fps = extractor['fps'];
+  let actualFrameIndex: number;
+
+  if (freezeAt !== undefined) {
+    // === Freeze frame: luôn hiển thị frame tại freezeAt ===
+    actualFrameIndex = Math.round(freezeAt * fps) + 1;
+  } else if (speedCurve && speedCurve.length >= 2) {
+    // === Speed ramping: tích phân speed curve để tính source time ===
+    // Thời gian thực (real time) trong element = frameIndex / fps
+    const realTime = (frameIndex - 1) / fps;
+    const sourceTime = integrateSpeedCurve(speedCurve, realTime);
+    actualFrameIndex = Math.round(sourceTime * fps) + 1 + Math.round(trimStart * fps);
+  } else {
+    // === Constant speed (legacy behavior) ===
+    const speedAdjustedFrame = Math.round(frameIndex * speed);
+    actualFrameIndex = speedAdjustedFrame + Math.round(trimStart * fps);
+
+    if (loop && speedAdjustedFrame > totalFrames) {
+      actualFrameIndex = ((speedAdjustedFrame - 1) % totalFrames) + 1 + Math.round(trimStart * fps);
+    } else if (speedAdjustedFrame > totalFrames) {
+      actualFrameIndex = totalFrames; // Freeze last frame
+    }
   }
+
+  // === Reverse: đảo ngược frame index ===
+  if (reverse) {
+    actualFrameIndex = totalFrames - Math.min(actualFrameIndex, totalFrames) + 1;
+  }
+
+  // Clamp frame index
+  actualFrameIndex = Math.max(1, Math.min(actualFrameIndex, totalFrames));
 
   // OPTIMIZATION: Dùng cached Image thay vì load từ disk mỗi frame
   const img = await extractor.getFrameImage(actualFrameIndex);
@@ -211,19 +237,80 @@ export async function paintVideoFrame(
       ctx.clip();
     }
 
-    // Fit mode
-    const drawParams = calculateFitDraw(img.width, img.height, width, height, fit);
-
     // Apply opacity
     if (opacity < 1) {
       ctx.globalAlpha = opacity;
     }
 
-    ctx.drawImage(img, drawParams.sx, drawParams.sy, drawParams.sw, drawParams.sh, pos.x, pos.y, width, height);
+    if (crop) {
+      // === Crop mode: vẽ chỉ vùng crop từ source frame ===
+      // Source rect = crop region, dest rect = element position
+      ctx.drawImage(
+        img,
+        crop.x, crop.y, crop.width, crop.height, // source (crop region)
+        pos.x, pos.y, width, height               // destination
+      );
+    } else {
+      // Fit mode (legacy)
+      const drawParams = calculateFitDraw(img.width, img.height, width, height, fit);
+      ctx.drawImage(img, drawParams.sx, drawParams.sy, drawParams.sw, drawParams.sh, pos.x, pos.y, width, height);
+    }
 
     ctx.restore();
   } catch {
     // Skip frame nếu load lỗi
   }
+}
+
+/**
+ * Tích phân speed curve để tính source time từ real time.
+ *
+ * Speed curve định nghĩa tốc độ tại từng thời điểm:
+ * - time=0, speed=1 → phát bình thường
+ * - time=1, speed=0.3 → slow motion
+ * - time=3, speed=2 → fast forward
+ *
+ * Source time = ∫₀ᵗ speed(t) dt
+ * Dùng trapezoidal integration giữa các điểm.
+ */
+function integrateSpeedCurve(curve: { time: number; speed: number }[], realTime: number): number {
+  // Sort curve by time (safety)
+  const sorted = [...curve].sort((a, b) => a.time - b.time);
+
+  let sourceTime = 0;
+  let prevTime = sorted[0].time;
+  let prevSpeed = sorted[0].speed;
+
+  // Nếu realTime < first point, dùng speed của first point
+  if (realTime <= prevTime) {
+    return realTime * prevSpeed;
+  }
+
+  // Integrate from start đến min(realTime, lastPoint)
+  for (let i = 1; i < sorted.length; i++) {
+    const pt = sorted[i];
+
+    if (realTime <= pt.time) {
+      // realTime nằm giữa prev và pt → interpolate speed + tích phân partial
+      const dt = realTime - prevTime;
+      const t = dt / (pt.time - prevTime);
+      const speedAtRealTime = prevSpeed + (pt.speed - prevSpeed) * t;
+      sourceTime += dt * (prevSpeed + speedAtRealTime) / 2; // trapezoidal
+      return sourceTime;
+    }
+
+    // Tích phân full segment (trapezoidal: average of 2 speeds × dt)
+    const dt = pt.time - prevTime;
+    sourceTime += dt * (prevSpeed + pt.speed) / 2;
+
+    prevTime = pt.time;
+    prevSpeed = pt.speed;
+  }
+
+  // realTime > last curve point → continue with last speed
+  const remaining = realTime - prevTime;
+  sourceTime += remaining * prevSpeed;
+
+  return sourceTime;
 }
 

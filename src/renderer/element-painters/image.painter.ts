@@ -2,7 +2,7 @@ import { Image, loadImage as canvasLoadImage } from '@napi-rs/canvas';
 import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
 import { ImageElement } from '../../types';
 import { AssetLoader } from '../asset-loader';
-import { computePosition, calculateFitDraw, roundRectPath } from '../utils';
+import { computePosition, calculateFitDraw, roundRectPath, getEasingFunction } from '../utils';
 import gifFrames from 'gif-frames';
 
 /**
@@ -103,11 +103,12 @@ function getCurrentGifFrame(gifData: { frames: GifFrame[]; totalDuration: number
 
 /**
  * Vẽ image element lên canvas
- * Hỗ trợ: static images + animated GIFs
+ * Hỗ trợ: static images + animated GIFs + Ken Burns effect
  *
  * OPTIMIZATION: Decode image 1 lần, cache Image object, reuse cho mọi frame
  *
- * @param timeInElement - Thời gian element đã hiển thị (giây) - dùng cho GIF animation
+ * @param timeInElement - Thời gian element đã hiển thị (giây) - dùng cho GIF animation + Ken Burns
+ * @param elementDuration - Tổng thời lượng element hiển thị (giây) - dùng cho Ken Burns progress
  */
 export async function paintImage(
   ctx: CanvasRenderingContext2D,
@@ -115,9 +116,10 @@ export async function paintImage(
   canvasWidth: number,
   canvasHeight: number,
   assetLoader: AssetLoader,
-  timeInElement = 0
+  timeInElement = 0,
+  elementDuration = 0
 ): Promise<void> {
-  const { url, width, height, position = 'center', fit = 'cover', offsetX = 0, offsetY = 0, borderRadius = 0, opacity = 1 } = element;
+  const { url, width, height, position = 'center', fit = 'cover', offsetX = 0, offsetY = 0, borderRadius = 0, opacity = 1, kenBurns } = element;
 
   try {
     let img: Image | null = null;
@@ -171,10 +173,14 @@ export async function paintImage(
       ctx.globalAlpha = opacity;
     }
 
-    // Tính toán vị trí draw dựa trên fit mode
-    const drawParams = calculateFitDraw(img.width, img.height, width, height, fit);
-
-    ctx.drawImage(img, drawParams.sx, drawParams.sy, drawParams.sw, drawParams.sh, pos.x, pos.y, width, height);
+    if (kenBurns && elementDuration > 0) {
+      // === Ken Burns effect: smooth continuous pan+zoom ===
+      paintKenBurns(ctx, img, pos.x, pos.y, width, height, kenBurns, timeInElement, elementDuration);
+    } else {
+      // Standard fit mode
+      const drawParams = calculateFitDraw(img.width, img.height, width, height, fit);
+      ctx.drawImage(img, drawParams.sx, drawParams.sy, drawParams.sw, drawParams.sh, pos.x, pos.y, width, height);
+    }
 
     ctx.restore();
   } catch {
@@ -191,6 +197,62 @@ export async function paintImage(
     ctx.fillText('Image Error', pos.x + width / 2, pos.y + height / 2);
     ctx.restore();
   }
+}
+
+/**
+ * Ken Burns effect — smooth continuous pan+zoom on static image
+ *
+ * Logic:
+ * 1. Tính progress (0→1) dựa trên timeInElement / elementDuration
+ * 2. Interpolate position (startX→endX, startY→endY) với easing
+ * 3. Interpolate zoom (startZoom→endZoom) với easing
+ * 4. Tính source rect: zoom xác định kích thước crop, position xác định tâm crop
+ * 5. Vẽ crop region → destination element
+ */
+function paintKenBurns(
+  ctx: CanvasRenderingContext2D,
+  img: Image,
+  destX: number,
+  destY: number,
+  destW: number,
+  destH: number,
+  config: import('../../types').KenBurnsConfig,
+  timeInElement: number,
+  elementDuration: number
+): void {
+  const {
+    startX = 50, startY = 50, startZoom = 1.2,
+    endX = 50, endY = 50, endZoom = 1.0,
+    easing = 'easeInOut',
+  } = config;
+
+  // Progress 0→1 with easing
+  const rawProgress = Math.max(0, Math.min(1, timeInElement / elementDuration));
+  const easingFn = getEasingFunction(easing);
+  const progress = easingFn(rawProgress);
+
+  // Interpolate zoom and position
+  const currentZoom = startZoom + (endZoom - startZoom) * progress;
+  const currentX = startX + (endX - startX) * progress;  // 0-100%
+  const currentY = startY + (endY - startY) * progress;  // 0-100%
+
+  // Calculate source crop region
+  // Zoom > 1 means we see less of the image (crop in), zoom < 1 would see more
+  const cropW = img.width / currentZoom;
+  const cropH = img.height / currentZoom;
+
+  // Pan position: currentX/Y (0-100%) determines where the center of view is
+  // Map 0% → crop starts at left edge, 100% → crop ends at right edge
+  const maxOffsetX = img.width - cropW;
+  const maxOffsetY = img.height - cropH;
+  const sx = (currentX / 100) * maxOffsetX;
+  const sy = (currentY / 100) * maxOffsetY;
+
+  ctx.drawImage(
+    img,
+    sx, sy, cropW, cropH,         // source (dynamic crop based on pan+zoom)
+    destX, destY, destW, destH     // destination (element area)
+  );
 }
 
 /**

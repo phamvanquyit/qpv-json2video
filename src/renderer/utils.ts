@@ -1,6 +1,6 @@
 import { createCanvas } from '@napi-rs/canvas';
 import type { SKRSContext2D as CanvasRenderingContext2D } from '@napi-rs/canvas';
-import { ComputedPosition, ElementAnimation, GradientConfig, PositionType, SceneTransition } from '../types';
+import { BlendMode, ComputedPosition, EasingType, ElementAnimation, FilterConfig, GradientConfig, Keyframe, PositionType, SceneTransition } from '../types';
 
 /**
  * UNICODE FALLBACK: @napi-rs/canvas (Skia) không tự động fallback font
@@ -101,9 +101,41 @@ function easeLinear(t: number): number {
   return t;
 }
 
+/** Ease in quadratic — accelerate */
+function easeIn(t: number): number {
+  return t * t;
+}
+
+/** Ease out quadratic — decelerate */
+function easeOut(t: number): number {
+  return t * (2 - t);
+}
+
+/** Ease in-out quadratic — smooth start and end */
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+/** Ease in cubic */
+function easeInCubic(t: number): number {
+  return t * t * t;
+}
+
 /** Ease out cubic — decelerate */
 function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
+}
+
+/** Ease in-out cubic */
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+/** Ease in back — wind up */
+function easeInBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return c3 * t * t * t - c1 * t * t;
 }
 
 /** Ease out back — overshoot rồi về */
@@ -111,6 +143,15 @@ function easeOutBack(t: number): number {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+/** Ease in-out back */
+function easeInOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c2 = c1 * 1.525;
+  return t < 0.5
+    ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
+    : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
 }
 
 /** Ease out bounce — nẩy */
@@ -125,6 +166,41 @@ function easeOutBounce(t: number): number {
     return n1 * (t -= 2.25 / d1) * t + 0.9375;
   } else {
     return n1 * (t -= 2.625 / d1) * t + 0.984375;
+  }
+}
+
+/** Ease out elastic — springy overshoot */
+function easeOutElastic(t: number): number {
+  if (t === 0 || t === 1) return t;
+  const c4 = (2 * Math.PI) / 3;
+  return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+}
+
+/** Spring — damped oscillation */
+function spring(t: number): number {
+  return 1 - Math.cos(t * Math.PI * 4) * Math.exp(-t * 6);
+}
+
+/**
+ * Resolve easing type name → easing function.
+ * Exported for use in keyframe system.
+ */
+export function getEasingFunction(type: EasingType | undefined): (t: number) => number {
+  switch (type) {
+    case 'linear': return easeLinear;
+    case 'easeIn': return easeIn;
+    case 'easeOut': return easeOut;
+    case 'easeInOut': return easeInOut;
+    case 'easeInCubic': return easeInCubic;
+    case 'easeOutCubic': return easeOutCubic;
+    case 'easeInOutCubic': return easeInOutCubic;
+    case 'easeInBack': return easeInBack;
+    case 'easeOutBack': return easeOutBack;
+    case 'easeInOutBack': return easeInOutBack;
+    case 'easeOutBounce': return easeOutBounce;
+    case 'easeOutElastic': return easeOutElastic;
+    case 'spring': return spring;
+    default: return easeOutCubic; // default easing
   }
 }
 
@@ -314,6 +390,174 @@ export function computeElementAnimation(
       // opacity luôn = 1 cho typewriter
       break;
     }
+  }
+
+  // Clamp opacity
+  state.opacity = Math.max(0, Math.min(1, state.opacity));
+
+  return state;
+}
+
+/**
+ * Keyframe animation state — extends ElementAnimationState with offsetX/offsetY overrides
+ */
+export interface KeyframeAnimationState extends ElementAnimationState {
+  /** Override offsetX từ position gốc. undefined = không override */
+  offsetXOverride?: number;
+  /** Override offsetY từ position gốc. undefined = không override */
+  offsetYOverride?: number;
+  /** Override rotation. undefined = không override */
+  rotationOverride?: number;
+}
+
+/**
+ * Tính animation state từ keyframes.
+ * Interpolate giữa các keyframes dựa trên thời gian hiện tại.
+ *
+ * Algorithm:
+ * 1. Sort keyframes theo time
+ * 2. Tìm cặp keyframes bao quanh thời gian hiện tại (prev, next)
+ * 3. Lerp từng property với easing function của keyframe đích
+ * 4. Properties không defined trong keyframe → giữ giá trị mặc định hoặc từ keyframe trước
+ *
+ * @param keyframes - Mảng keyframes (sorted hoặc unsorted)
+ * @param currentTime - Thời gian hiện tại trong scene (giây)
+ * @param elementStart - Thời điểm element bắt đầu trong scene
+ */
+export function computeKeyframeState(
+  keyframes: Keyframe[],
+  currentTime: number,
+  elementStart: number | undefined,
+): KeyframeAnimationState {
+  const state: KeyframeAnimationState = {
+    opacity: 1,
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+  };
+
+  if (!keyframes || keyframes.length === 0) return state;
+
+  // Sort by time (stable sort)
+  const sorted = [...keyframes].sort((a, b) => a.time - b.time);
+
+  const elStart = elementStart ?? 0;
+  const timeInElement = currentTime - elStart;
+
+  // Animatable property names
+  const PROPS = ['opacity', 'scale', 'rotation', 'offsetX', 'offsetY'] as const;
+  type AnimProp = typeof PROPS[number];
+
+  // Default values khi property chưa được set
+  const defaults: Record<AnimProp, number> = {
+    opacity: 1,
+    scale: 1,
+    rotation: 0,
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  // Before first keyframe → use first keyframe values for defined props
+  if (timeInElement <= sorted[0].time) {
+    const first = sorted[0];
+    state.opacity = Math.max(0, Math.min(1, first.opacity ?? defaults.opacity));
+    state.scale = first.scale ?? defaults.scale;
+    if (first.offsetX !== undefined) state.offsetXOverride = first.offsetX;
+    if (first.offsetY !== undefined) state.offsetYOverride = first.offsetY;
+    if (first.rotation !== undefined) state.rotationOverride = first.rotation;
+    return state;
+  }
+
+  // After last keyframe → use last keyframe values
+  const last = sorted[sorted.length - 1];
+  if (timeInElement >= last.time) {
+    // Collect final values: last defined value for each property across all keyframes
+    for (const prop of PROPS) {
+      let val: number | undefined;
+      for (const kf of sorted) {
+        if (kf[prop] !== undefined) val = kf[prop];
+      }
+      if (val !== undefined) {
+        switch (prop) {
+          case 'opacity': state.opacity = Math.max(0, Math.min(1, val)); break;
+          case 'scale': state.scale = val; break;
+          case 'rotation': state.rotationOverride = val; break;
+          case 'offsetX': state.offsetXOverride = val; break;
+          case 'offsetY': state.offsetYOverride = val; break;
+        }
+      }
+    }
+    return state;
+  }
+
+  // Find surrounding keyframes: prev <= time < next
+  let prevIdx = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].time <= timeInElement) {
+      prevIdx = i;
+    } else {
+      break;
+    }
+  }
+  const nextIdx = prevIdx + 1;
+  const prevKf = sorted[prevIdx];
+  const nextKf = sorted[nextIdx];
+
+  // Progress between prev and next
+  const segmentDuration = nextKf.time - prevKf.time;
+  const rawProgress = segmentDuration > 0 ? (timeInElement - prevKf.time) / segmentDuration : 1;
+  const clampedProgress = Math.max(0, Math.min(1, rawProgress));
+
+  // Apply easing (easing on the target keyframe)
+  const easingFn = getEasingFunction(nextKf.easing);
+  const easedProgress = easingFn(clampedProgress);
+
+  // Interpolate each property
+  // For each prop: find the last defined value at or before prevKf, and the value at nextKf
+  for (const prop of PROPS) {
+    // Find prev value: scan backwards from prevIdx
+    let prevVal: number | undefined;
+    for (let i = prevIdx; i >= 0; i--) {
+      if (sorted[i][prop] !== undefined) {
+        prevVal = sorted[i][prop];
+        break;
+      }
+    }
+    // Find next value
+    const nextVal = nextKf[prop];
+
+    if (prevVal !== undefined && nextVal !== undefined) {
+      // Both defined → interpolate
+      const interpolated = prevVal + (nextVal - prevVal) * easedProgress;
+      switch (prop) {
+        case 'opacity': state.opacity = interpolated; break;
+        case 'scale': state.scale = interpolated; break;
+        case 'rotation': state.rotationOverride = interpolated; break;
+        case 'offsetX': state.offsetXOverride = interpolated; break;
+        case 'offsetY': state.offsetYOverride = interpolated; break;
+      }
+    } else if (nextVal !== undefined) {
+      // Only next defined → interpolate from default
+      const defVal = defaults[prop];
+      const interpolated = defVal + (nextVal - defVal) * easedProgress;
+      switch (prop) {
+        case 'opacity': state.opacity = interpolated; break;
+        case 'scale': state.scale = interpolated; break;
+        case 'rotation': state.rotationOverride = interpolated; break;
+        case 'offsetX': state.offsetXOverride = interpolated; break;
+        case 'offsetY': state.offsetYOverride = interpolated; break;
+      }
+    } else if (prevVal !== undefined) {
+      // Only prev defined → hold value
+      switch (prop) {
+        case 'opacity': state.opacity = prevVal; break;
+        case 'scale': state.scale = prevVal; break;
+        case 'rotation': state.rotationOverride = prevVal; break;
+        case 'offsetX': state.offsetXOverride = prevVal; break;
+        case 'offsetY': state.offsetYOverride = prevVal; break;
+      }
+    }
+    // Neither defined → leave default
   }
 
   // Clamp opacity
@@ -666,4 +910,55 @@ export function createGradient(
   }
 
   return gradient;
+}
+
+/**
+ * Build CSS filter string từ FilterConfig.
+ * Dùng cho ctx.filter (Skia CSS filter support).
+ *
+ * @example
+ * buildFilterString({ blur: 3, brightness: 1.2 })
+ * → 'blur(3px) brightness(1.2)'
+ *
+ * buildFilterString({ grayscale: 1, contrast: 1.5, hueRotate: 90 })
+ * → 'grayscale(1) contrast(1.5) hue-rotate(90deg)'
+ */
+export function buildFilterString(config: FilterConfig): string {
+  const parts: string[] = [];
+
+  if (config.blur !== undefined && config.blur > 0) {
+    parts.push(`blur(${config.blur}px)`);
+  }
+  if (config.brightness !== undefined && config.brightness !== 1) {
+    parts.push(`brightness(${config.brightness})`);
+  }
+  if (config.contrast !== undefined && config.contrast !== 1) {
+    parts.push(`contrast(${config.contrast})`);
+  }
+  if (config.saturate !== undefined && config.saturate !== 1) {
+    parts.push(`saturate(${config.saturate})`);
+  }
+  if (config.grayscale !== undefined && config.grayscale > 0) {
+    parts.push(`grayscale(${config.grayscale})`);
+  }
+  if (config.sepia !== undefined && config.sepia > 0) {
+    parts.push(`sepia(${config.sepia})`);
+  }
+  if (config.hueRotate !== undefined && config.hueRotate !== 0) {
+    parts.push(`hue-rotate(${config.hueRotate}deg)`);
+  }
+  if (config.invert !== undefined && config.invert > 0) {
+    parts.push(`invert(${config.invert})`);
+  }
+
+  return parts.join(' ');
+}
+
+/**
+ * Map BlendMode → Canvas 2D globalCompositeOperation value.
+ * 'normal' maps to 'source-over' (default).
+ */
+export function blendModeToComposite(mode: BlendMode): string {
+  if (mode === 'normal') return 'source-over';
+  return mode; // Tất cả blend mode names trùng với globalCompositeOperation
 }

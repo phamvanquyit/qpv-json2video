@@ -1,0 +1,251 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "title": "Inline SVG — Shapes",
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "elements": [
+            {
+              "type": "text",
+              "text": "SVG RENDERING",
+              "fontSize": 56,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><defs><linearGradient id='g1' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:#FF6B6B'/><stop offset='100%' style='stop-color:#4ECDC4'/></linearGradient></defs><circle cx='200' cy='200' r='180' fill='url(#g1)' opacity='0.9'/><circle cx='200' cy='200' r='120' fill='none' stroke='white' stroke-width='4' stroke-dasharray='20,10'/><polygon points='170,130 170,270 270,200' fill='white' opacity='0.9'/></svg>",
+              "width": 400,
+              "height": 400,
+              "position": "center",
+              "offsetY": -150,
+              "zIndex": 1,
+              "animation": {
+                "type": "zoomIn"
+              },
+              "shadow": {
+                "color": "rgba(255,107,107,0.5)",
+                "blur": 40,
+                "offsetX": 0,
+                "offsetY": 15
+              }
+            },
+            {
+              "type": "text",
+              "text": "Inline SVG — gradient + shapes",
+              "fontSize": 26,
+              "color": "#AAAACC",
+              "position": "center",
+              "offsetY": 130,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "title": "SVG with fillColor override",
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "FILL COLOR",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5 L63 38 L98 38 L70 59 L80 95 L50 73 L20 95 L30 59 L2 38 L37 38 Z' fill='#333'/></svg>",
+              "width": 300,
+              "height": 300,
+              "position": "center",
+              "offsetX": -180,
+              "offsetY": -100,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop"
+              }
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5 L63 38 L98 38 L70 59 L80 95 L50 73 L20 95 L30 59 L2 38 L37 38 Z' fill='#333'/></svg>",
+              "width": 300,
+              "height": 300,
+              "position": "center",
+              "offsetX": 180,
+              "offsetY": -100,
+              "zIndex": 1,
+              "fillColor": "#FFD700",
+              "animation": {
+                "type": "pop"
+              }
+            },
+            {
+              "type": "text",
+              "text": "Original",
+              "fontSize": 28,
+              "color": "#888",
+              "position": "center",
+              "offsetX": -180,
+              "offsetY": 100,
+              "zIndex": 5
+            },
+            {
+              "type": "text",
+              "text": "fillColor: gold",
+              "fontSize": 28,
+              "color": "#FFD700",
+              "position": "center",
+              "offsetX": 180,
+              "offsetY": 100,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "title": "SVG Icons Grid",
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "SVG ICONS",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#4ECDC4",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='#FF6B6B'/></svg>",
+              "width": 200,
+              "height": 200,
+              "position": "center",
+              "offsetX": -250,
+              "offsetY": -150,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop"
+              }
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z' fill='#4ECDC4'/></svg>",
+              "width": 200,
+              "height": 200,
+              "position": "center",
+              "offsetX": 0,
+              "offsetY": -150,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop"
+              },
+              "start": 0.3
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z' fill='#FFD700'/></svg>",
+              "width": 200,
+              "height": 200,
+              "position": "center",
+              "offsetX": 250,
+              "offsetY": -150,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop"
+              },
+              "start": 0.6
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z' fill='#A78BFA'/></svg>",
+              "width": 200,
+              "height": 200,
+              "position": "center",
+              "offsetX": -250,
+              "offsetY": 100,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop"
+              },
+              "start": 0.9
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z' fill='#F97316'/></svg>",
+              "width": 200,
+              "height": 200,
+              "position": "center",
+              "offsetX": 0,
+              "offsetY": 100,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop"
+              },
+              "start": 1.2
+            },
+            {
+              "type": "svg",
+              "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z' fill='#34D399'/></svg>",
+              "width": 200,
+              "height": 200,
+              "position": "center",
+              "offsetX": 250,
+              "offsetY": 100,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop"
+              },
+              "start": 1.5
+            },
+            {
+              "type": "text",
+              "text": "Material Design Icons (inline SVG)",
+              "fontSize": 24,
+              "color": "#888",
+              "position": "bottom-center",
+              "offsetY": -200,
+              "zIndex": 5,
+              "start": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,333 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 3,
+          "bgGradient": {
+            "colors": [
+              "#0f0c29",
+              "#302b63",
+              "#24243e"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Text Background Shapes",
+              "fontSize": 48,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -300,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "pill • banner • speech-bubble",
+              "fontSize": 24,
+              "color": "#888888",
+              "position": "center",
+              "offsetY": -220,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "Rectangle (default)",
+              "fontSize": 32,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "rgba(78, 205, 196, 0.6)",
+              "bgShape": "rectangle",
+              "borderRadius": 8,
+              "padding": 16,
+              "position": "center",
+              "offsetY": -80,
+              "zIndex": 2,
+              "animation": {
+                "type": "slideInLeft",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "  PREMIUM MEMBER  ",
+              "fontSize": 28,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "#FFD700",
+              "bgShape": "pill",
+              "padding": 16,
+              "position": "center",
+              "offsetY": 40,
+              "zIndex": 2,
+              "animation": {
+                "type": "slideInRight",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "🎉 LIMITED OFFER 🎉",
+              "fontSize": 36,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "#FF4444",
+              "bgShape": "banner",
+              "padding": 20,
+              "position": "center",
+              "offsetY": 180,
+              "zIndex": 2,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "Hey! Check this out!",
+              "fontSize": 28,
+              "color": "#333333",
+              "bgColor": "#FFFFFF",
+              "bgShape": "speech-bubble",
+              "borderRadius": 16,
+              "padding": 18,
+              "position": "center",
+              "offsetY": 360,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#1a0a2e",
+              "#3b1f6e",
+              "#0f3460"
+            ],
+            "angle": 180
+          },
+          "transition": {
+            "type": "slideUp",
+            "duration": 0.6
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Pill Shape",
+              "fontSize": 40,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -350,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "  NEW  ",
+              "fontSize": 20,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "#FF4444",
+              "bgShape": "pill",
+              "padding": 10,
+              "position": "center",
+              "offsetY": -220,
+              "zIndex": 2,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.4
+              }
+            },
+            {
+              "type": "text",
+              "text": "  SALE 50% OFF  ",
+              "fontSize": 36,
+              "fontWeight": "bold",
+              "color": "#1a1a2e",
+              "bgColor": "#FFD700",
+              "bgShape": "pill",
+              "padding": 18,
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 2,
+              "animation": {
+                "type": "slideInLeft",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "  ⭐ Best Seller ⭐  ",
+              "fontSize": 28,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "rgba(78,205,196,0.8)",
+              "bgShape": "pill",
+              "padding": 14,
+              "position": "center",
+              "offsetY": 20,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "  FREE SHIPPING  ",
+              "fontSize": 24,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "#00C851",
+              "bgShape": "pill",
+              "padding": 12,
+              "position": "center",
+              "offsetY": 130,
+              "zIndex": 2,
+              "animation": {
+                "type": "slideInRight",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "  🔥 TRENDING 🔥  ",
+              "fontSize": 30,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "#FF6B6B",
+              "bgShape": "pill",
+              "padding": 16,
+              "position": "center",
+              "offsetY": 260,
+              "zIndex": 2,
+              "animation": {
+                "type": "bounce",
+                "fadeInDuration": 0.6
+              }
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#0a1628",
+              "#162447",
+              "#1f4068"
+            ],
+            "angle": 45
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Speech Bubble",
+              "fontSize": 40,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -380,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "Hello! 👋",
+              "fontSize": 36,
+              "color": "#333333",
+              "bgColor": "#FFFFFF",
+              "bgShape": "speech-bubble",
+              "borderRadius": 20,
+              "padding": 20,
+              "position": "center",
+              "offsetX": -120,
+              "offsetY": -200,
+              "zIndex": 2,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "How are you? 😊",
+              "fontSize": 32,
+              "color": "#FFFFFF",
+              "bgColor": "#4ECDC4",
+              "bgShape": "speech-bubble",
+              "borderRadius": 18,
+              "padding": 18,
+              "position": "center",
+              "offsetX": 100,
+              "offsetY": -20,
+              "zIndex": 2,
+              "start": 0.5,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "I'm great! 🎉",
+              "fontSize": 32,
+              "color": "#333333",
+              "bgColor": "#FFD700",
+              "bgShape": "speech-bubble",
+              "borderRadius": 18,
+              "padding": 18,
+              "position": "center",
+              "offsetX": -100,
+              "offsetY": 180,
+              "zIndex": 2,
+              "start": 1.0,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "Let's go! 🚀",
+              "fontSize": 36,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "#FF6B6B",
+              "bgShape": "speech-bubble",
+              "borderRadius": 20,
+              "padding": 20,
+              "position": "center",
+              "offsetX": 80,
+              "offsetY": 380,
+              "zIndex": 2,
+              "start": 1.5,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.5
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

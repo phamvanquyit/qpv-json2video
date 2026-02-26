@@ -1,0 +1,130 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "elements": [
+            {
+              "type": "text",
+              "text": "IMAGES",
+              "fontSize": 56,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 400,
+              "height": 400,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 1,
+              "borderRadius": 30,
+              "animation": {
+                "type": "zoomIn",
+                "fadeInDuration": 0.8
+              },
+              "shadow": {
+                "color": "rgba(0,0,0,0.6)",
+                "blur": 25,
+                "offsetX": 0,
+                "offsetY": 12
+              }
+            },
+            {
+              "type": "text",
+              "text": "cover + borderRadius:30 + shadow",
+              "fontSize": 26,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 200,
+              "zIndex": 2
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "FIT MODES",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/2/800/800.jpg",
+              "width": 400,
+              "height": 250,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -200,
+              "zIndex": 1,
+              "shadow": {
+                "color": "rgba(0,0,0,0.4)",
+                "blur": 15,
+                "offsetX": 0,
+                "offsetY": 6
+              }
+            },
+            {
+              "type": "text",
+              "text": "fit: cover (crop)",
+              "fontSize": 24,
+              "color": "#4ECDC4",
+              "position": "center",
+              "offsetY": -50,
+              "zIndex": 2
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/2/800/800.jpg",
+              "width": 400,
+              "height": 250,
+              "fit": "contain",
+              "position": "center",
+              "offsetY": 100,
+              "zIndex": 1,
+              "shadow": {
+                "color": "rgba(0,0,0,0.4)",
+                "blur": 15,
+                "offsetX": 0,
+                "offsetY": 6
+              }
+            },
+            {
+              "type": "text",
+              "text": "fit: contain (letterbox)",
+              "fontSize": 24,
+              "color": "#FFD700",
+              "position": "center",
+              "offsetY": 260,
+              "zIndex": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

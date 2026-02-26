@@ -1,0 +1,186 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "title": "Ken Burns — Zoom Out + Pan Right",
+          "duration": 6,
+          "bgColor": "#0a0a14",
+          "elements": [
+            {
+              "type": "text",
+              "text": "KEN BURNS EFFECT",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/15/1200/800.jpg",
+              "width": 900,
+              "height": 700,
+              "position": "center",
+              "offsetY": -50,
+              "zIndex": 1,
+              "borderRadius": 20,
+              "kenBurns": {
+                "startX": 0,
+                "startY": 0,
+                "startZoom": 1.5,
+                "endX": 100,
+                "endY": 50,
+                "endZoom": 1.0,
+                "easing": "easeInOut"
+              },
+              "shadow": {
+                "color": "rgba(0,0,0,0.6)",
+                "blur": 30,
+                "offsetX": 0,
+                "offsetY": 12
+              }
+            },
+            {
+              "type": "text",
+              "text": "Zoom out + pan right",
+              "fontSize": 26,
+              "color": "#AAAACC",
+              "position": "bottom-center",
+              "offsetY": -200,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "title": "Ken Burns — Slow Zoom In Center",
+          "duration": 6,
+          "bgColor": "#0a0a14",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "SLOW ZOOM IN",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/27/1200/800.jpg",
+              "width": 900,
+              "height": 700,
+              "position": "center",
+              "offsetY": -50,
+              "zIndex": 1,
+              "borderRadius": 20,
+              "kenBurns": {
+                "startX": 50,
+                "startY": 50,
+                "startZoom": 1.0,
+                "endX": 50,
+                "endY": 50,
+                "endZoom": 1.6,
+                "easing": "easeInOut"
+              },
+              "shadow": {
+                "color": "rgba(255,215,0,0.4)",
+                "blur": 30,
+                "offsetX": 0,
+                "offsetY": 12
+              }
+            },
+            {
+              "type": "text",
+              "text": "Zoom 1.0 → 1.6 (center focus)",
+              "fontSize": 26,
+              "color": "#FFD700",
+              "position": "bottom-center",
+              "offsetY": -200,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "title": "Ken Burns — Diagonal Pan",
+          "duration": 6,
+          "bgColor": "#0a0a14",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "DIAGONAL PAN",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#4ECDC4",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/36/1200/800.jpg",
+              "width": 900,
+              "height": 700,
+              "position": "center",
+              "offsetY": -50,
+              "zIndex": 1,
+              "borderRadius": 20,
+              "kenBurns": {
+                "startX": 0,
+                "startY": 0,
+                "startZoom": 1.3,
+                "endX": 100,
+                "endY": 100,
+                "endZoom": 1.3,
+                "easing": "linear"
+              },
+              "shadow": {
+                "color": "rgba(78,205,196,0.4)",
+                "blur": 30,
+                "offsetX": 0,
+                "offsetY": 12
+              }
+            },
+            {
+              "type": "text",
+              "text": "Top-left → Bottom-right (constant zoom)",
+              "fontSize": 26,
+              "color": "#4ECDC4",
+              "position": "bottom-center",
+              "offsetY": -200,
+              "zIndex": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

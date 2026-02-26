@@ -1,0 +1,247 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 4,
+          "bgColor": "#FFFFFF",
+          "vignette": {
+            "intensity": 0.8,
+            "size": 0.3
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 800,
+              "height": 1200,
+              "position": "center",
+              "zIndex": 0
+            },
+            {
+              "type": "text",
+              "text": "🔳 VIGNETTE",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 4
+            },
+            {
+              "type": "text",
+              "text": "intensity: 0.8 • size: 0.3",
+              "fontSize": 30,
+              "color": "#FFF",
+              "position": "top-center",
+              "offsetY": 160,
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 2
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#0d1117",
+              "#1a1a2e"
+            ],
+            "angle": 90
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "vignette": {
+            "intensity": 0.5,
+            "size": 0.6
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0
+            },
+            {
+              "type": "text",
+              "text": "🔳 VIGNETTE (nhẹ)",
+              "fontSize": 44,
+              "fontFamily": "Orbitron",
+              "color": "#4ECDC4",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 3
+            },
+            {
+              "type": "text",
+              "text": "intensity: 0.5 • size: 0.6",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "top-center",
+              "offsetY": 150,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgColor": "#FFFFFF",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "colorOverlay": {
+            "color": "rgba(255,50,0,0.35)"
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 800,
+              "height": 1200,
+              "position": "center",
+              "zIndex": 0
+            },
+            {
+              "type": "text",
+              "text": "🟧 COLOR OVERLAY",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 4
+            },
+            {
+              "type": "text",
+              "text": "rgba(255,50,0,0.35)",
+              "fontSize": 30,
+              "color": "#FFF",
+              "position": "top-center",
+              "offsetY": 150,
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 2
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgColor": "#FF0000",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "colorOverlay": {
+            "color": "rgba(0,0,255,0.5)",
+            "blendMode": "screen"
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "🎨 OVERLAY + BLEND",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 4
+            },
+            {
+              "type": "text",
+              "text": "Blue overlay on red bg\nblendMode: screen",
+              "fontSize": 30,
+              "color": "#FFF",
+              "textAlign": "center",
+              "position": "center",
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 2
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#0f0c29",
+              "#302b63",
+              "#24243e"
+            ],
+            "angle": 135
+          },
+          "transition": {
+            "type": "zoomIn",
+            "duration": 0.5
+          },
+          "vignette": {
+            "intensity": 0.7,
+            "size": 0.4
+          },
+          "colorOverlay": {
+            "color": "rgba(0,100,255,0.2)",
+            "blendMode": "screen"
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0
+            },
+            {
+              "type": "text",
+              "text": "🎬 VIG + OVERLAY",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFF",
+              "position": "top-center",
+              "offsetY": 60,
+              "zIndex": 1,
+              "strokeColor": "#000",
+              "strokeWidth": 4,
+              "glow": {
+                "color": "#4ECDC4",
+                "blur": 15
+              }
+            },
+            {
+              "type": "text",
+              "text": "vignette + colorOverlay\n(blend: screen)",
+              "fontSize": 28,
+              "color": "#CCCCCC",
+              "textAlign": "center",
+              "position": "top-center",
+              "offsetY": 140,
+              "zIndex": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

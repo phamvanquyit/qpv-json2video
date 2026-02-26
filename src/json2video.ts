@@ -5,6 +5,7 @@ import * as path from 'path';
 import { CanvasRenderer } from './renderer/canvas-renderer';
 import { FFmpegEncoder } from './renderer/ffmpeg-encoder';
 import { detectPlatform, getOptimalEncoder } from './renderer/platform';
+import { assertValidConfig } from './schema';
 import { RenderOptions, RenderResult, Scene, Track, VideoConfig } from './types';
 
 // Re-export platform utilities for external use
@@ -105,20 +106,8 @@ async function _renderVideo(videoConfig: any, options?: RenderOptions, directOut
   const outputDir = options?.outputDir || path.join(os.tmpdir(), 'json2video-output');
 
   try {
-    // Validate
-    if (!videoConfig) {
-      throw new Error('videoConfig không được để trống');
-    }
-
-    const w = Number(videoConfig.width);
-    const h = Number(videoConfig.height);
-    if (!w || !h || w <= 0 || h <= 0) {
-      throw new Error('videoConfig phải có đủ width và height (> 0)');
-    }
-
-    if (!videoConfig.tracks && !videoConfig.scenes) {
-      throw new Error('videoConfig phải có tracks[]');
-    }
+    // === Schema Validation (Zod) ===
+    assertValidConfig(videoConfig);
 
     // Normalize config
     const config = normalizeConfig(videoConfig);

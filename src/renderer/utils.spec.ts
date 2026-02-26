@@ -1,6 +1,6 @@
-import { buildFontString, calculateFitDraw, clearMeasureCache, computeElementOpacity, computeElementAnimation, computeSceneTransition, computePosition, createGradient, isElementVisible, measureTextBlock, normalizeFontWeight, roundRectPath, wrapText } from './utils';
+import { buildFontString, buildFilterString, blendModeToComposite, calculateFitDraw, clearMeasureCache, computeElementOpacity, computeElementAnimation, computeSceneTransition, computePosition, createGradient, isElementVisible, measureTextBlock, normalizeFontWeight, roundRectPath, wrapText } from './utils';
 import { createCanvas } from '@napi-rs/canvas';
-import { ElementAnimation } from '../types';
+import { BlendMode, ElementAnimation, FilterConfig } from '../types';
 
 // ============================================================
 // computePosition
@@ -834,5 +834,85 @@ describe('clearMeasureCache', () => {
     clearMeasureCache();
     const result = measureTextBlock('Test', 24, 'sans-serif', 400, 500, 1.3);
     expect(result.width).toBeGreaterThan(0);
+  });
+});
+
+// ============================================================
+// buildFilterString (Phase 5)
+// ============================================================
+describe('buildFilterString', () => {
+  it('should return empty string for empty config', () => {
+    expect(buildFilterString({})).toBe('');
+  });
+
+  it('should build blur filter', () => {
+    expect(buildFilterString({ blur: 5 })).toBe('blur(5px)');
+  });
+
+  it('should skip blur when 0', () => {
+    expect(buildFilterString({ blur: 0 })).toBe('');
+  });
+
+  it('should build brightness filter', () => {
+    expect(buildFilterString({ brightness: 1.5 })).toBe('brightness(1.5)');
+  });
+
+  it('should skip brightness when 1 (default)', () => {
+    expect(buildFilterString({ brightness: 1 })).toBe('');
+  });
+
+  it('should build contrast filter', () => {
+    expect(buildFilterString({ contrast: 0.8 })).toBe('contrast(0.8)');
+  });
+
+  it('should build saturate filter', () => {
+    expect(buildFilterString({ saturate: 0 })).toBe('saturate(0)');
+  });
+
+  it('should build grayscale filter', () => {
+    expect(buildFilterString({ grayscale: 1 })).toBe('grayscale(1)');
+  });
+
+  it('should build sepia filter', () => {
+    expect(buildFilterString({ sepia: 0.5 })).toBe('sepia(0.5)');
+  });
+
+  it('should build hueRotate filter', () => {
+    expect(buildFilterString({ hueRotate: 90 })).toBe('hue-rotate(90deg)');
+  });
+
+  it('should build invert filter', () => {
+    expect(buildFilterString({ invert: 1 })).toBe('invert(1)');
+  });
+
+  it('should combine multiple filters', () => {
+    const result = buildFilterString({ blur: 3, brightness: 1.2, grayscale: 0.5 });
+    expect(result).toBe('blur(3px) brightness(1.2) grayscale(0.5)');
+  });
+
+  it('should skip default/zero values in combined filters', () => {
+    const result = buildFilterString({ blur: 0, brightness: 1, contrast: 1.5, grayscale: 0 });
+    expect(result).toBe('contrast(1.5)');
+  });
+});
+
+// ============================================================
+// blendModeToComposite (Phase 5)
+// ============================================================
+describe('blendModeToComposite', () => {
+  it('should map normal to source-over', () => {
+    expect(blendModeToComposite('normal')).toBe('source-over');
+  });
+
+  it.each([
+    'multiply', 'screen', 'overlay', 'darken', 'lighten',
+    'color-dodge', 'color-burn', 'hard-light', 'soft-light',
+    'difference', 'exclusion',
+  ] as BlendMode[])('should map %s directly', (mode) => {
+    expect(blendModeToComposite(mode)).toBe(mode);
+  });
+
+  it('should return string type', () => {
+    expect(typeof blendModeToComposite('screen')).toBe('string');
   });
 });

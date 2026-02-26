@@ -1,0 +1,186 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "title": "Video Reverse",
+          "duration": 5,
+          "bgColor": "#0d0d1a",
+          "elements": [
+            {
+              "type": "text",
+              "text": "🔄 VIDEO REVERSE",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "video",
+              "url": "https://videos.pexels.com/video-files/5495901/5495901-hd_1080_1920_30fps.mp4",
+              "width": 900,
+              "height": 700,
+              "position": "center",
+              "offsetY": -50,
+              "fit": "cover",
+              "borderRadius": 20,
+              "zIndex": 1,
+              "reverse": true,
+              "shadow": {
+                "color": "rgba(100,50,255,0.5)",
+                "blur": 30,
+                "offsetX": 0,
+                "offsetY": 8
+              }
+            },
+            {
+              "type": "text",
+              "text": "reverse: true — phát ngược",
+              "fontSize": 26,
+              "color": "#AAAACC",
+              "position": "bottom-center",
+              "offsetY": -200,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "title": "Freeze Frame",
+          "duration": 5,
+          "bgColor": "#0d0d1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "⏸️ FREEZE FRAME",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "video",
+              "url": "https://videos.pexels.com/video-files/5495901/5495901-hd_1080_1920_30fps.mp4",
+              "width": 900,
+              "height": 700,
+              "position": "center",
+              "offsetY": -50,
+              "fit": "cover",
+              "borderRadius": 20,
+              "zIndex": 1,
+              "freezeAt": 2.0,
+              "shadow": {
+                "color": "rgba(255, 165, 0, 0.5)",
+                "blur": 30,
+                "offsetX": 0,
+                "offsetY": 8
+              }
+            },
+            {
+              "type": "text",
+              "text": "freezeAt: 2.0 — dừng tại giây thứ 2",
+              "fontSize": 26,
+              "color": "#FFD700",
+              "position": "bottom-center",
+              "offsetY": -200,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "title": "Speed Ramping",
+          "duration": 5,
+          "bgColor": "#0d0d1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "⚡ SPEED RAMPING",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn"
+              }
+            },
+            {
+              "type": "video",
+              "url": "https://videos.pexels.com/video-files/5495901/5495901-hd_1080_1920_30fps.mp4",
+              "width": 900,
+              "height": 700,
+              "position": "center",
+              "offsetY": -50,
+              "fit": "cover",
+              "borderRadius": 20,
+              "zIndex": 1,
+              "speedCurve": [
+                {
+                  "time": 0,
+                  "speed": 1
+                },
+                {
+                  "time": 1,
+                  "speed": 0.3
+                },
+                {
+                  "time": 2.5,
+                  "speed": 0.3
+                },
+                {
+                  "time": 3.5,
+                  "speed": 2
+                },
+                {
+                  "time": 5,
+                  "speed": 2
+                }
+              ],
+              "shadow": {
+                "color": "rgba(0, 200, 150, 0.5)",
+                "blur": 30,
+                "offsetX": 0,
+                "offsetY": 8
+              }
+            },
+            {
+              "type": "text",
+              "text": "1x → 0.3x (slow-mo) → 2x (fast)",
+              "fontSize": 26,
+              "color": "#4ECDC4",
+              "position": "bottom-center",
+              "offsetY": -200,
+              "zIndex": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

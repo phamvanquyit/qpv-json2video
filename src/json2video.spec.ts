@@ -60,17 +60,17 @@ describe('json2video', () => {
 
   describe('validation', () => {
     it.each([null, undefined, false, 0, ''])('should throw for falsy config: %p', async (val) => {
-      await expect(json2video(val)).rejects.toThrow('videoConfig không được để trống');
+      await expect(json2video(val)).rejects.toThrow('Video config không hợp lệ');
     });
 
     it('should throw if width is missing', async () => {
       await expect(json2video({ height: 1920, scenes: [{ duration: 5 }] }))
-        .rejects.toThrow('width và height');
+        .rejects.toThrow('Video config không hợp lệ');
     });
 
     it('should throw if height is missing', async () => {
       await expect(json2video({ width: 1080, scenes: [{ duration: 5 }] }))
-        .rejects.toThrow('width và height');
+        .rejects.toThrow('Video config không hợp lệ');
     });
 
     it.each([0, -1, -100])('should throw if width is %p', async (w) => {
@@ -90,24 +90,24 @@ describe('json2video', () => {
 
     it('should throw if both scenes and tracks are missing', async () => {
       await expect(json2video({ width: 1080, height: 1920 }))
-        .rejects.toThrow('tracks[]');
+        .rejects.toThrow('Video config không hợp lệ');
     });
 
     it('should throw if scenes is empty', async () => {
       await expect(json2video({ width: 1080, height: 1920, scenes: [] }))
-        .rejects.toThrow('ít nhất một scene');
+        .rejects.toThrow('Video config không hợp lệ');
     });
 
     it.each([0, -1, -100])('should throw if scene duration is %p', async (dur) => {
       await expect(json2video({ width: 1080, height: 1920, scenes: [{ duration: dur }] }))
-        .rejects.toThrow('duration > 0');
+        .rejects.toThrow('Video config không hợp lệ');
     });
 
     it('should validate each scene independently', async () => {
       await expect(json2video({
         width: 1080, height: 1920,
         scenes: [{ duration: 1 }, { duration: 0 }],
-      })).rejects.toThrow('duration > 0');
+      })).rejects.toThrow('Video config không hợp lệ');
     });
 
     it('should accept scene with only duration', async () => {
@@ -224,11 +224,9 @@ describe('json2video', () => {
       );
     });
 
-    it('should default fps to 30 if NaN', async () => {
-      await json2video({ width: 1080, height: 1920, fps: 'abc', scenes: [{ duration: 1 }] });
-      expect(CanvasRenderer).toHaveBeenCalledWith(
-        expect.objectContaining({ fps: 30 }), 30, undefined,
-      );
+    it('should throw if fps is NaN string', async () => {
+      await expect(json2video({ width: 1080, height: 1920, fps: 'abc', scenes: [{ duration: 1 }] }))
+        .rejects.toThrow('Video config không hợp lệ');
     });
 
     it('should normalize element width/height/zIndex', async () => {
@@ -605,7 +603,7 @@ describe('json2videoFile', () => {
 
   it('should throw for invalid config', async () => {
     const outputPath = path.join(os.tmpdir(), `j2v-invalid-${Date.now()}.mp4`);
-    await expect(json2videoFile(null, outputPath)).rejects.toThrow('videoConfig không được để trống');
+    await expect(json2videoFile(null, outputPath)).rejects.toThrow('Video config không hợp lệ');
   });
 });
 

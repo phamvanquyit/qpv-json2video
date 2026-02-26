@@ -40,6 +40,49 @@ export interface ElementAnimation {
 }
 
 /**
+ * Easing function type
+ * Dùng cho keyframe animation và preset animations
+ */
+export type EasingType =
+  | 'linear'
+  | 'easeIn' | 'easeOut' | 'easeInOut'
+  | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic'
+  | 'easeInBack' | 'easeOutBack' | 'easeInOutBack'
+  | 'easeOutBounce'
+  | 'easeOutElastic'
+  | 'spring';
+
+/**
+ * Keyframe — define một trạng thái tại thời điểm cụ thể.
+ * Hệ thống sẽ interpolate giữa các keyframes.
+ *
+ * @example
+ * ```json
+ * { "time": 0, "opacity": 0, "scale": 0.5, "easing": "easeOutBack" }
+ * { "time": 0.5, "opacity": 1, "scale": 1 }
+ * { "time": 2, "offsetX": 200, "rotation": 360 }
+ * ```
+ */
+export interface Keyframe {
+  /** Thời điểm trong element timeline (giây), tính từ element start */
+  time: number;
+  /** Easing function cho transition TỪ keyframe trước TỚI keyframe này. Mặc định 'easeOutCubic' */
+  easing?: EasingType;
+
+  // --- Animatable properties ---
+  /** Opacity 0-1 */
+  opacity?: number;
+  /** Scale factor */
+  scale?: number;
+  /** Rotation degrees */
+  rotation?: number;
+  /** X offset từ position gốc (px) */
+  offsetX?: number;
+  /** Y offset từ position gốc (px) */
+  offsetY?: number;
+}
+
+/**
  * Shadow config cho elements
  */
 export interface ShadowConfig {
@@ -73,6 +116,74 @@ export interface GradientConfig {
   colors: string[];
   /** Góc gradient (degrees), chỉ dùng cho linear. 0 = trái→phải, 90 = trên→dưới. Mặc định 0 */
   angle?: number;
+}
+
+/**
+ * CSS-style visual filters cho elements
+ * Dùng ctx.filter (Skia CSS filter support)
+ *
+ * @example
+ * ```json
+ * { "blur": 3, "brightness": 1.2, "contrast": 1.1, "grayscale": 0.5 }
+ * ```
+ */
+export interface FilterConfig {
+  /** Gaussian blur (px), mặc định 0 (không blur) */
+  blur?: number;
+  /** Độ sáng (0–2), mặc định 1. 0 = đen, 2 = sáng gấp đôi */
+  brightness?: number;
+  /** Độ tương phản (0–2), mặc định 1 */
+  contrast?: number;
+  /** Độ bão hòa (0–2), mặc định 1. 0 = xám hoàn toàn */
+  saturate?: number;
+  /** Xám hóa (0–1), mặc định 0. 1 = hoàn toàn xám */
+  grayscale?: number;
+  /** Hiệu ứng sepia (0–1), mặc định 0. 1 = sepia hoàn toàn */
+  sepia?: number;
+  /** Xoay màu (0–360°), mặc định 0 */
+  hueRotate?: number;
+  /** Đảo ngược màu (0–1), mặc định 0. 1 = đảo hoàn toàn */
+  invert?: number;
+}
+
+/**
+ * Blend mode cho element — dùng ctx.globalCompositeOperation
+ * Maps trực tiếp sang Canvas 2D composite operations
+ */
+export type BlendMode =
+  | 'normal'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'hard-light'
+  | 'soft-light'
+  | 'difference'
+  | 'exclusion';
+
+/**
+ * Vignette config — darkened edges on scene
+ */
+export interface VignetteConfig {
+  /** Cường độ tối (0–1), mặc định 0.5 */
+  intensity?: number;
+  /** Kích thước vùng sáng ở giữa (0–1), mặc định 0.5. 0 = tối toàn bộ, 1 = không tối */
+  size?: number;
+  /** Màu vignette, mặc định '#000000' */
+  color?: string;
+}
+
+/**
+ * Color overlay — phủ màu semi-transparent lên scene
+ */
+export interface ColorOverlayConfig {
+  /** Màu overlay, ví dụ 'rgba(255,0,0,0.3)' hoặc '#FF000050' */
+  color: string;
+  /** Blend mode cho overlay, mặc định 'normal' */
+  blendMode?: BlendMode;
 }
 
 /**
@@ -117,10 +228,87 @@ export interface ElementBase {
   scale?: number;
   /** Góc xoay (degrees), mặc định 0. Ví dụ: 45 = xoay 45° theo chiều kim đồng hồ */
   rotation?: number;
-  /** Animation cho element */
+  /** Animation cho element (preset) */
   animation?: ElementAnimation;
+  /**
+   * Keyframe animation — animate bất kỳ property nào theo thời gian.
+   * Khi có keyframes, sẽ OVERRIDE animation preset.
+   * Thời gian trong keyframe tính từ element start.
+   *
+   * @example
+   * ```json
+   * "keyframes": [
+   *   { "time": 0, "opacity": 0, "scale": 0.5 },
+   *   { "time": 0.5, "opacity": 1, "scale": 1, "easing": "easeOutBack" },
+   *   { "time": 3, "offsetX": 200, "rotation": 45 }
+   * ]
+   * ```
+   */
+  keyframes?: Keyframe[];
   /** Drop shadow cho element */
   shadow?: ShadowConfig;
+  /** CSS-style visual filters (blur, brightness, contrast, saturate, grayscale, sepia, hueRotate, invert) */
+  filters?: FilterConfig;
+  /** Blend mode — cách element composite lên canvas. Mặc định 'normal' (source-over) */
+  blendMode?: BlendMode;
+}
+
+/**
+ * Rich text segment — mỗi segment có style riêng
+ * Dùng trong richText array để tạo multi-style text
+ */
+export interface RichTextSegment {
+  /** Nội dung text của segment */
+  text: string;
+  /** Màu text, mặc định kế thừa từ element */
+  color?: string;
+  /** Font size, mặc định kế thừa từ element */
+  fontSize?: number;
+  /** Font weight: 'bold', 700, 'normal', etc. Mặc định kế thừa từ element */
+  fontWeight?: string | number;
+  /** Font family, mặc định kế thừa từ element */
+  fontFamily?: string;
+  /** Italic, mặc định false */
+  italic?: boolean;
+  /** Underline, mặc định false */
+  underline?: boolean;
+  /** Màu nền cho segment (highlight), mặc định không có */
+  bgColor?: string;
+  /** Stroke color cho segment */
+  strokeColor?: string;
+  /** Stroke width cho segment */
+  strokeWidth?: number;
+}
+
+/**
+ * Text background shape type
+ * - 'rectangle': hình chữ nhật (mặc định, giống bgColor hiện tại)
+ * - 'pill': bo tròn 2 đầu (border-radius = height/2)
+ * - 'banner': ribbon banner với mép cắt chéo
+ * - 'speech-bubble': speech bubble với tail ở dưới
+ */
+export type TextBackgroundShape = 'rectangle' | 'pill' | 'banner' | 'speech-bubble';
+
+/**
+ * Counter/Timer config — hiệu ứng đếm số
+ */
+export interface CounterConfig {
+  /** Số bắt đầu */
+  from: number;
+  /** Số kết thúc */
+  to: number;
+  /** Thời lượng đếm (giây), mặc định = element duration */
+  duration?: number;
+  /** Prefix hiển thị trước số, ví dụ '$' */
+  prefix?: string;
+  /** Suffix hiển thị sau số, ví dụ '%' hoặc 'K' */
+  suffix?: string;
+  /** Số chữ số thập phân, mặc định 0 */
+  decimals?: number;
+  /** Dùng separator (dấu phẩy) cho hàng nghìn, mặc định true */
+  thousandSep?: boolean;
+  /** Easing cho animation đếm, mặc định 'easeOutCubic' */
+  easing?: EasingType;
 }
 
 /**
@@ -144,6 +332,37 @@ export interface TextElement extends ElementBase {
   glow?: GlowConfig;
   /** Gradient fill cho text — thay thế solid color */
   gradient?: GradientConfig;
+
+  // === Phase 6: Advanced Text ===
+
+  /**
+   * Rich text — mảng segments, mỗi segment có style riêng.
+   * Khi có richText, field `text` sẽ bị bỏ qua.
+   * @example
+   * ```json
+   * "richText": [
+   *   { "text": "SALE ", "color": "#FF0000", "fontSize": 72 },
+   *   { "text": "50% OFF", "color": "#FFD700", "fontSize": 96, "fontWeight": "bold" }
+   * ]
+   * ```
+   */
+  richText?: RichTextSegment[];
+
+  /**
+   * Background shape cho text box.
+   * Mặc định 'rectangle' (giống bgColor hiện tại).
+   */
+  bgShape?: TextBackgroundShape;
+
+  /**
+   * Counter/timer animation — hiệu ứng đếm số.
+   * Khi có counter, field `text` sẽ được override bằng giá trị đang đếm.
+   * @example
+   * ```json
+   * "counter": { "from": 0, "to": 1000, "duration": 2, "prefix": "$" }
+   * ```
+   */
+  counter?: CounterConfig;
 }
 
 /**
@@ -155,6 +374,80 @@ export interface ImageElement extends ElementBase {
   width: number;
   height: number;
   fit?: 'cover' | 'contain' | 'fill';
+
+  // === Phase 7: Image Enhancements ===
+
+  /** Ken Burns effect — slow continuous pan+zoom trên ảnh tĩnh */
+  kenBurns?: KenBurnsConfig;
+}
+
+/**
+ * Ken Burns config — smooth continuous pan+zoom on static image
+ * Tạo chuyển động camera mượt mà trên ảnh tĩnh
+ *
+ * @example
+ * ```json
+ * {
+ *   "startX": 0, "startY": 0, "startZoom": 1.3,
+ *   "endX": 100, "endY": 50, "endZoom": 1.0,
+ *   "easing": "easeInOut"
+ * }
+ * ```
+ */
+export interface KenBurnsConfig {
+  /** Vị trí X bắt đầu (% of image width, 0-100). 0 = trái, 50 = giữa, 100 = phải. Mặc định 50 */
+  startX?: number;
+  /** Vị trí Y bắt đầu (% of image height, 0-100). 0 = trên, 50 = giữa, 100 = dưới. Mặc định 50 */
+  startY?: number;
+  /** Zoom level bắt đầu. 1 = 100%, 1.5 = 150%. Mặc định 1.2 */
+  startZoom?: number;
+  /** Vị trí X kết thúc (% of image width, 0-100). Mặc định 50 */
+  endX?: number;
+  /** Vị trí Y kết thúc (% of image height, 0-100). Mặc định 50 */
+  endY?: number;
+  /** Zoom level kết thúc. Mặc định 1.0 */
+  endZoom?: number;
+  /** Easing function cho animation. Mặc định 'easeInOut' */
+  easing?: EasingType;
+}
+
+/**
+ * Video crop config — crop vùng hiển thị từ source video
+ *
+ * @example
+ * ```json
+ * { "x": 100, "y": 0, "width": 800, "height": 800 }
+ * ```
+ */
+export interface VideoCropConfig {
+  /** Tọa độ X bắt đầu crop (px) */
+  x: number;
+  /** Tọa độ Y bắt đầu crop (px) */
+  y: number;
+  /** Chiều rộng vùng crop (px) */
+  width: number;
+  /** Chiều cao vùng crop (px) */
+  height: number;
+}
+
+/**
+ * Speed curve point — định nghĩa tốc độ tại thời điểm cụ thể
+ * Dùng cho speed ramping (tốc độ thay đổi trong clip)
+ *
+ * @example
+ * ```json
+ * [
+ *   { "time": 0, "speed": 1 },
+ *   { "time": 1, "speed": 0.3 },
+ *   { "time": 3, "speed": 2 }
+ * ]
+ * ```
+ */
+export interface SpeedCurvePoint {
+  /** Thời điểm trong clip (giây) */
+  time: number;
+  /** Tốc độ tại thời điểm này. 0.5 = slow-mo, 2 = fast forward */
+  speed: number;
 }
 
 /**
@@ -170,8 +463,37 @@ export interface VideoElement extends ElementBase {
   volume?: number;
   /** Bắt đầu chạy video từ giây thứ N (trim đầu), mặc định 0 */
   trimStart?: number;
-  /** Tốc độ phát video. 0.5 = slow-mo, 2 = fast forward, mặc định 1 */
+  /** Tốc độ phát video (constant). 0.5 = slow-mo, 2 = fast forward, mặc định 1 */
   speed?: number;
+
+  // === Phase 7: Advanced Video Processing ===
+
+  /** Crop vùng hiển thị từ source video (pixel coordinates) */
+  crop?: VideoCropConfig;
+  /** Phát video ngược, mặc định false */
+  reverse?: boolean;
+  /**
+   * Freeze frame — dừng tại thời điểm cụ thể trong source video (giây).
+   * Video sẽ hiển thị frame tại freezeAt trong suốt freezeDuration.
+   */
+  freezeAt?: number;
+  /** Thời lượng freeze frame (giây). Chỉ có tác dụng khi có freezeAt. Mặc định = element duration */
+  freezeDuration?: number;
+  /**
+   * Speed ramping — tốc độ thay đổi theo thời gian.
+   * Khi có speedCurve, field `speed` sẽ bị bỏ qua.
+   * Hệ thống interpolate linear giữa các điểm.
+   *
+   * @example
+   * ```json
+   * "speedCurve": [
+   *   { "time": 0, "speed": 1 },
+   *   { "time": 1, "speed": 0.3 },
+   *   { "time": 3, "speed": 2 }
+   * ]
+   * ```
+   */
+  speedCurve?: SpeedCurvePoint[];
 }
 
 /**
@@ -246,7 +568,118 @@ export interface CaptionElement extends ElementBase {
   highlightScale?: number;
 }
 
-export type SceneElement = TextElement | ImageElement | VideoElement | CaptionElement | ShapeElement;
+/**
+ * Waveform visualization style
+ * - 'bars': vertical bars (equalizer-style, mặc định)
+ * - 'line': continuous smooth line
+ * - 'mirror': mirrored bars (top + bottom, centered)
+ * - 'circle': circular waveform (bars from center)
+ */
+export type WaveformStyle = 'bars' | 'line' | 'mirror' | 'circle';
+
+/**
+ * Waveform element — visualize audio waveform/spectrum animated
+ * 
+ * Hệ thống sẽ extract audio data từ audioUrl (dùng FFmpeg),
+ * rồi render animated waveform theo style đã chọn.
+ *
+ * @example
+ * ```json
+ * {
+ *   "type": "waveform",
+ *   "audioUrl": "https://example.com/music.mp3",
+ *   "style": "bars",
+ *   "color": "#4ECDC4",
+ *   "width": 800,
+ *   "height": 200,
+ *   "position": "bottom-center"
+ * }
+ * ```
+ */
+export interface WaveformElement extends ElementBase {
+  type: 'waveform';
+  /** URL tới audio file (http/https, file://, hoặc relative path) */
+  audioUrl: string;
+  /** Chiều rộng hiển thị (px) */
+  width: number;
+  /** Chiều cao hiển thị (px) */
+  height: number;
+  /** Kiểu waveform, mặc định 'bars' */
+  style?: WaveformStyle;
+  /** Màu chính của waveform, mặc định '#4ECDC4' */
+  color?: string;
+  /** Màu phụ (dùng cho fill area trong style 'line'), mặc định không có */
+  secondaryColor?: string;
+  /** Số thanh bar (cho style 'bars', 'mirror', 'circle'), mặc định 64 */
+  barCount?: number;
+  /** Chiều rộng mỗi bar (px), mặc định tự tính dựa trên width và barCount */
+  barWidth?: number;
+  /** Khoảng cách giữa các bar (px), mặc định 2 */
+  barGap?: number;
+  /** Border radius cho mỗi bar (px), mặc định 2 */
+  barRadius?: number;
+  /** Độ dày đường line (cho style 'line'), mặc định 2 */
+  lineWidth?: number;
+  /** Độ nhạy (amplifier), mặc định 1. Giá trị > 1 tăng biên độ, < 1 giảm biên độ */
+  sensitivity?: number;
+  /** Smoothing factor (0-1), mặc định 0.3. Cao = mượt mà hơn */
+  smoothing?: number;
+  /** Mirror mode (dùng cho style 'bars' → tự đổi thành 'mirror'), mặc định false */
+  mirror?: boolean;
+  /** Gradient cho waveform (thay thế solid color) */
+  gradient?: GradientConfig;
+}
+
+export type SceneElement = TextElement | ImageElement | VideoElement | CaptionElement | ShapeElement | SvgElement | WaveformElement;
+
+/**
+ * SVG element — render SVG trực tiếp lên canvas
+ *
+ * Hỗ trợ 2 cách:
+ * 1. Inline SVG string (svgContent)
+ * 2. URL tới file .svg (url)
+ *
+ * @example
+ * ```json
+ * {
+ *   "type": "svg",
+ *   "svgContent": "<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><circle cx='100' cy='100' r='80' fill='red'/></svg>",
+ *   "width": 200,
+ *   "height": 200,
+ *   "position": "center"
+ * }
+ * ```
+ *
+ * @example
+ * ```json
+ * {
+ *   "type": "svg",
+ *   "url": "https://example.com/icon.svg",
+ *   "width": 300,
+ *   "height": 300,
+ *   "position": "center"
+ * }
+ * ```
+ */
+export interface SvgElement extends ElementBase {
+  type: 'svg';
+  /** Inline SVG string. Khi có svgContent, field `url` sẽ bị bỏ qua */
+  svgContent?: string;
+  /** URL tới file SVG (http/https). Dùng khi không có svgContent */
+  url?: string;
+  /** Chiều rộng hiển thị (px) */
+  width: number;
+  /** Chiều cao hiển thị (px) */
+  height: number;
+  /** Fit mode cho SVG, mặc định 'contain' (giữ tỷ lệ, không crop) */
+  fit?: 'cover' | 'contain' | 'fill';
+  /**
+   * Override màu fill chính của SVG.
+   * Hệ thống sẽ replace `fill="..."` và `fill:...` trong SVG string.
+   * Hữu ích khi dùng SVG icon và muốn đổi màu.
+   */
+  fillColor?: string;
+}
 
 /**
  * Audio config
@@ -284,6 +717,10 @@ export interface Scene {
   audio?: AudioConfig | AudioConfig[];
   /** Transition vào scene (áp dụng ở đầu scene) */
   transition?: SceneTransition;
+  /** Vignette — darkened edges cho scene */
+  vignette?: VignetteConfig;
+  /** Color overlay — phủ màu semi-transparent lên scene */
+  colorOverlay?: ColorOverlayConfig;
 }
 
 /**
