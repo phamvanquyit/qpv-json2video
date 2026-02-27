@@ -1,0 +1,400 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#0d1117",
+              "#1a1a2e",
+              "#0f3460"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": -200,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Rich ",
+                  "color": "#FFFFFF",
+                  "fontSize": 64
+                },
+                {
+                  "text": "Text",
+                  "color": "#4ECDC4",
+                  "fontSize": 64,
+                  "fontWeight": "bold"
+                }
+              ],
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": -80,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Multi-style ",
+                  "color": "#888888",
+                  "fontSize": 28
+                },
+                {
+                  "text": "segments",
+                  "color": "#FFD700",
+                  "fontSize": 28,
+                  "fontWeight": "bold"
+                }
+              ],
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 1.0
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": 100,
+              "zIndex": 2,
+              "bgColor": "rgba(0,0,0,0.6)",
+              "borderRadius": 16,
+              "padding": 20,
+              "richText": [
+                {
+                  "text": "SALE ",
+                  "color": "#FF6B6B",
+                  "fontSize": 72,
+                  "fontWeight": "bold"
+                },
+                {
+                  "text": "$",
+                  "color": "#FFD700",
+                  "fontSize": 48
+                },
+                {
+                  "text": "9",
+                  "color": "#FFD700",
+                  "fontSize": 96,
+                  "fontWeight": "bold"
+                },
+                {
+                  "text": ".99",
+                  "color": "#FFD700",
+                  "fontSize": 56
+                }
+              ],
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": 320,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "was ",
+                  "color": "#888888",
+                  "fontSize": 28
+                },
+                {
+                  "text": "$29.99",
+                  "color": "#FF4444",
+                  "fontSize": 28,
+                  "strokeColor": "#FF4444",
+                  "strokeWidth": 0.5
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#1a0a2e",
+              "#2d1b69",
+              "#0f3460"
+            ],
+            "angle": 180
+          },
+          "transition": {
+            "type": "slideLeft",
+            "duration": 0.6
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": -300,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Multiple ",
+                  "color": "#FFFFFF",
+                  "fontSize": 48
+                },
+                {
+                  "text": "Fonts",
+                  "color": "#FF6B6B",
+                  "fontSize": 48,
+                  "fontWeight": "bold"
+                }
+              ],
+              "animation": {
+                "type": "slideInTop",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Big ",
+                  "color": "#FFD700",
+                  "fontSize": 80,
+                  "fontWeight": "bold"
+                },
+                {
+                  "text": "and ",
+                  "color": "#AAAAAA",
+                  "fontSize": 32
+                },
+                {
+                  "text": "small",
+                  "color": "#4ECDC4",
+                  "fontSize": 24
+                },
+                {
+                  "text": " together",
+                  "color": "#AAAAAA",
+                  "fontSize": 32
+                }
+              ],
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": 100,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "🔥 ",
+                  "fontSize": 56
+                },
+                {
+                  "text": "HOT",
+                  "color": "#FF4444",
+                  "fontSize": 72,
+                  "fontWeight": "bold"
+                },
+                {
+                  "text": " DEAL ",
+                  "color": "#FFFFFF",
+                  "fontSize": 56
+                },
+                {
+                  "text": "🔥",
+                  "fontSize": 56
+                }
+              ],
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": 300,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Click ",
+                  "color": "#FFFFFF",
+                  "fontSize": 32
+                },
+                {
+                  "text": "here",
+                  "color": "#00BFFF",
+                  "fontSize": 32,
+                  "underline": true
+                },
+                {
+                  "text": " for details",
+                  "color": "#FFFFFF",
+                  "fontSize": 32
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#0a1628",
+              "#162447",
+              "#1f4068"
+            ],
+            "angle": 90
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": -250,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Highlight ",
+                  "color": "#FFFFFF",
+                  "fontSize": 40
+                },
+                {
+                  "text": "Background",
+                  "color": "#FFFFFF",
+                  "fontSize": 40,
+                  "fontWeight": "bold",
+                  "bgColor": "rgba(78, 205, 196, 0.3)"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "SUCCESS",
+                  "color": "#00FF88",
+                  "fontSize": 56,
+                  "fontWeight": "bold",
+                  "strokeColor": "#005533",
+                  "strokeWidth": 3
+                },
+                {
+                  "text": " — ",
+                  "color": "#888",
+                  "fontSize": 40
+                },
+                {
+                  "text": "ERROR",
+                  "color": "#FF4444",
+                  "fontSize": 56,
+                  "fontWeight": "bold",
+                  "strokeColor": "#550000",
+                  "strokeWidth": 3
+                }
+              ],
+              "animation": {
+                "type": "zoomIn",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": 100,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Per-segment ",
+                  "color": "#AAAAAA",
+                  "fontSize": 32
+                },
+                {
+                  "text": "STROKE",
+                  "color": "#FFD700",
+                  "fontSize": 48,
+                  "fontWeight": "bold",
+                  "strokeColor": "#FF6B6B",
+                  "strokeWidth": 4
+                },
+                {
+                  "text": " and ",
+                  "color": "#AAAAAA",
+                  "fontSize": 32
+                },
+                {
+                  "text": "UNDERLINE",
+                  "color": "#4ECDC4",
+                  "fontSize": 48,
+                  "fontWeight": "bold",
+                  "underline": true
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "",
+              "position": "center",
+              "offsetY": 300,
+              "zIndex": 2,
+              "richText": [
+                {
+                  "text": "Made with ",
+                  "color": "#888888",
+                  "fontSize": 24
+                },
+                {
+                  "text": "❤️",
+                  "fontSize": 28
+                },
+                {
+                  "text": " by ",
+                  "color": "#888888",
+                  "fontSize": 24
+                },
+                {
+                  "text": "qpv-json2video",
+                  "color": "#4ECDC4",
+                  "fontSize": 24,
+                  "fontWeight": "bold"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

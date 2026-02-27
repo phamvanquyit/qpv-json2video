@@ -1,0 +1,186 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#0d1117",
+              "#1a1a2e",
+              "#0f3460"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "MULTI-TRACK",
+              "fontSize": 64,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "bgColor": "#1a1a2e",
+          "transition": {
+            "type": "slideLeft",
+            "duration": 0.8
+          }
+        },
+        {
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#24243e",
+              "#0f3460"
+            ],
+            "angle": 90
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "zIndex": 1,
+      "start": 0,
+      "scenes": [
+        {
+          "duration": 15,
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/237/200/200.jpg",
+              "width": 80,
+              "height": 80,
+              "borderRadius": 40,
+              "position": "top-right",
+              "offsetX": -24,
+              "offsetY": 24,
+              "zIndex": 1,
+              "opacity": 0.5,
+              "shadow": {
+                "color": "rgba(0,0,0,0.5)",
+                "blur": 10,
+                "offsetX": 0,
+                "offsetY": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "zIndex": 2,
+      "start": 0,
+      "scenes": [
+        {
+          "duration": 5,
+          "elements": [
+            {
+              "type": "text",
+              "text": "Track 2 text overlay",
+              "fontSize": 36,
+              "fontFamily": "Orbitron",
+              "color": "#FFD700",
+              "position": "bottom-center",
+              "offsetY": -300,
+              "zIndex": 1,
+              "animation": {
+                "type": "slideInBottom",
+                "fadeInDuration": 0.8
+              }
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "elements": [
+            {
+              "type": "text",
+              "text": "Scene 2 - different text",
+              "fontSize": 36,
+              "fontFamily": "Orbitron",
+              "color": "#4ECDC4",
+              "position": "center",
+              "zIndex": 1,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "elements": [
+            {
+              "type": "text",
+              "text": "Scene 3 - final text",
+              "fontSize": 36,
+              "fontFamily": "Orbitron",
+              "color": "#FF6B6B",
+              "position": "center",
+              "zIndex": 1,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.5
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "zIndex": 3,
+      "start": 2,
+      "scenes": [
+        {
+          "duration": 11,
+          "elements": [
+            {
+              "type": "shape",
+              "width": 300,
+              "height": 50,
+              "bgColor": "rgba(255,107,107,0.7)",
+              "borderRadius": 25,
+              "position": "top-center",
+              "offsetY": 200,
+              "zIndex": 1,
+              "animation": {
+                "type": "slideInRight",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "start: 2s offset",
+              "fontSize": 24,
+              "color": "#FFFFFF",
+              "fontWeight": "bold",
+              "position": "top-center",
+              "offsetY": 208,
+              "zIndex": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

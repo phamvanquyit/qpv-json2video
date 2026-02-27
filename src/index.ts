@@ -12,6 +12,7 @@ export type {
   CaptionOptions,
   SvgOptions,
   WaveformOptions,
+  TimerOptions,
 } from './builder';
 
 // Platform types
@@ -51,6 +52,8 @@ export type {
   SpeedCurvePoint,
   SvgElement,
   TextElement,
+  TimerElement,
+  TimerFormat,
   Track,
   TransitionType,
   VideoCropConfig,

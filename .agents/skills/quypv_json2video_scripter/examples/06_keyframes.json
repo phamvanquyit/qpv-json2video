@@ -1,0 +1,255 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "elements": [
+            {
+              "type": "text",
+              "text": "Pop in → float → fade out",
+              "fontSize": 36,
+              "color": "#AAAAAA",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "KEYFRAME\nANIMATION",
+              "fontSize": 72,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "textAlign": "center",
+              "position": "center",
+              "zIndex": 1,
+              "keyframes": [
+                {
+                  "time": 0,
+                  "opacity": 0,
+                  "scale": 0,
+                  "rotation": -30
+                },
+                {
+                  "time": 0.5,
+                  "opacity": 1,
+                  "scale": 1.2,
+                  "rotation": 0,
+                  "easing": "easeOutBack"
+                },
+                {
+                  "time": 1.2,
+                  "scale": 1,
+                  "offsetY": -50,
+                  "easing": "easeOutCubic"
+                },
+                {
+                  "time": 3.5,
+                  "offsetY": -80,
+                  "easing": "linear"
+                },
+                {
+                  "time": 4.5,
+                  "opacity": 0,
+                  "easing": "easeIn"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Slide in + bounce",
+              "fontSize": 36,
+              "color": "#AAAAAA",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 2
+            },
+            {
+              "type": "shape",
+              "width": 400,
+              "height": 250,
+              "bgColor": "#4ECDC4",
+              "borderRadius": 20,
+              "position": "center",
+              "zIndex": 1,
+              "keyframes": [
+                {
+                  "time": 0,
+                  "offsetX": -600,
+                  "opacity": 0
+                },
+                {
+                  "time": 0.8,
+                  "offsetX": 0,
+                  "opacity": 1,
+                  "easing": "easeOutBack"
+                },
+                {
+                  "time": 2,
+                  "offsetY": -30,
+                  "easing": "easeOutCubic"
+                },
+                {
+                  "time": 2.5,
+                  "offsetY": 0,
+                  "easing": "easeOutBounce"
+                },
+                {
+                  "time": 4,
+                  "scale": 0.8,
+                  "rotation": 10,
+                  "easing": "easeInOut"
+                },
+                {
+                  "time": 4.5,
+                  "opacity": 0,
+                  "scale": 0.5,
+                  "easing": "easeIn"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Spring oscillation",
+              "fontSize": 36,
+              "color": "#AAAAAA",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "🔥 SPRING",
+              "fontSize": 72,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FF6B6B",
+              "position": "center",
+              "zIndex": 1,
+              "glow": {
+                "color": "#FF6B6B",
+                "blur": 20
+              },
+              "keyframes": [
+                {
+                  "time": 0,
+                  "scale": 0,
+                  "opacity": 0
+                },
+                {
+                  "time": 1,
+                  "scale": 1,
+                  "opacity": 1,
+                  "easing": "spring"
+                },
+                {
+                  "time": 4,
+                  "rotation": 360,
+                  "easing": "linear"
+                },
+                {
+                  "time": 4.8,
+                  "opacity": 0,
+                  "easing": "easeIn"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#0f0c29",
+              "#302b63"
+            ],
+            "angle": 135
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Elastic easing",
+              "fontSize": 36,
+              "color": "#AAAAAA",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "ELASTIC",
+              "fontSize": 80,
+              "fontFamily": "Bebas Neue",
+              "fontWeight": "bold",
+              "position": "center",
+              "zIndex": 1,
+              "gradient": {
+                "type": "linear",
+                "colors": [
+                  "#4ECDC4",
+                  "#FFD700"
+                ],
+                "angle": 0
+              },
+              "keyframes": [
+                {
+                  "time": 0,
+                  "scale": 0,
+                  "offsetY": 200
+                },
+                {
+                  "time": 1.5,
+                  "scale": 1,
+                  "offsetY": 0,
+                  "easing": "easeOutElastic"
+                },
+                {
+                  "time": 4,
+                  "rotation": -15,
+                  "easing": "easeInOut"
+                },
+                {
+                  "time": 4.8,
+                  "opacity": 0,
+                  "scale": 2,
+                  "easing": "easeIn"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

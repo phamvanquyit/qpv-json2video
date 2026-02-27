@@ -1,0 +1,344 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 3,
+          "bgColor": "#1a1a2e",
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "blur": 8
+              }
+            },
+            {
+              "type": "text",
+              "text": "🔵 BLUR: 8px",
+              "fontSize": 42,
+              "fontFamily": "Orbitron",
+              "color": "#00BFFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "brightness": 1.8
+              }
+            },
+            {
+              "type": "text",
+              "text": "☀️ BRIGHTNESS: 1.8",
+              "fontSize": 42,
+              "fontFamily": "Orbitron",
+              "color": "#FFD700",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "contrast": 2.0
+              }
+            },
+            {
+              "type": "text",
+              "text": "🔲 CONTRAST: 2.0",
+              "fontSize": 42,
+              "fontFamily": "Orbitron",
+              "color": "#FF6B6B",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "saturate": 0
+              }
+            },
+            {
+              "type": "text",
+              "text": "🎨 SATURATE: 0",
+              "fontSize": 42,
+              "fontFamily": "Orbitron",
+              "color": "#AAAAAA",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 600,
+              "height": 800,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "grayscale": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "⬛ GRAYSCALE",
+              "fontSize": 42,
+              "fontFamily": "Orbitron",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 600,
+              "height": 800,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "sepia": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "🟤 SEPIA (vintage)",
+              "fontSize": 42,
+              "fontFamily": "Orbitron",
+              "color": "#D2B48C",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "hueRotate": 180
+              }
+            },
+            {
+              "type": "text",
+              "text": "🌈 HUE-ROTATE: 180°",
+              "fontSize": 40,
+              "fontFamily": "Orbitron",
+              "color": "#FF69B4",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 500,
+              "height": 500,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "invert": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "🔄 INVERT",
+              "fontSize": 42,
+              "fontFamily": "Orbitron",
+              "color": "#00FF00",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#0a0a0a",
+          "transition": {
+            "type": "slideLeft",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 600,
+              "height": 800,
+              "position": "center",
+              "zIndex": 0,
+              "filters": {
+                "blur": 2,
+                "brightness": 1.3,
+                "contrast": 1.2,
+                "sepia": 0.4
+              }
+            },
+            {
+              "type": "text",
+              "text": "✨ COMBINED FILTERS",
+              "fontSize": 40,
+              "fontFamily": "Orbitron",
+              "color": "#FFD700",
+              "position": "top-center",
+              "offsetY": 60,
+              "zIndex": 1
+            },
+            {
+              "type": "text",
+              "text": "blur + bright + contrast + sepia",
+              "fontSize": 28,
+              "color": "#CCCCCC",
+              "position": "top-center",
+              "offsetY": 130,
+              "zIndex": 1
+            }
+          ]
+        },
+        {
+          "duration": 3,
+          "bgColor": "#1a1a2e",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "BLURRED TEXT",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "fontFamily": "Orbitron",
+              "color": "#FF6B6B",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 0,
+              "filters": {
+                "blur": 4
+              }
+            },
+            {
+              "type": "text",
+              "text": "SHARP TEXT",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "fontFamily": "Orbitron",
+              "color": "#4ECDC4",
+              "position": "center",
+              "offsetY": 100,
+              "zIndex": 1
+            },
+            {
+              "type": "text",
+              "text": "🔤 Filter on Text element",
+              "fontSize": 32,
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 80,
+              "zIndex": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "title": "Timer Formats",
+          "duration": 8,
+          "bgGradient": {
+            "colors": [
+              "#0d1117",
+              "#1a1a2e",
+              "#0f3460"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Timer Element",
+              "fontSize": 48,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -700,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "real-time clock display",
+              "fontSize": 24,
+              "color": "#888888",
+              "position": "center",
+              "offsetY": -630,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "hh:mm:ss:SSS",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": -480,
+              "zIndex": 2
+            },
+            {
+              "type": "timer",
+              "format": "hh:mm:ss:SSS",
+              "fontSize": 64,
+              "fontWeight": "bold",
+              "color": "#00FF88",
+              "position": "center",
+              "offsetY": -400,
+              "zIndex": 2,
+              "glow": {
+                "color": "#00FF88",
+                "blur": 12
+              }
+            },
+            {
+              "type": "text",
+              "text": "mm:ss:SSS",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": -230,
+              "zIndex": 2
+            },
+            {
+              "type": "timer",
+              "format": "mm:ss:SSS",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "color": "#4ECDC4",
+              "separatorColor": "#FFFFFF30",
+              "position": "center",
+              "offsetY": -140,
+              "zIndex": 2,
+              "strokeColor": "#000000",
+              "strokeWidth": 3
+            },
+            {
+              "type": "text",
+              "text": "mm:ss",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 20,
+              "zIndex": 2
+            },
+            {
+              "type": "timer",
+              "format": "mm:ss",
+              "fontSize": 96,
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "separatorColor": "#FFD70050",
+              "bgColor": "rgba(255,255,255,0.06)",
+              "borderRadius": 16,
+              "padding": 20,
+              "position": "center",
+              "offsetY": 130,
+              "zIndex": 2,
+              "glow": {
+                "color": "#FFD700",
+                "blur": 10
+              }
+            },
+            {
+              "type": "text",
+              "text": "ss:SSS (starts at 3s)",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 310,
+              "zIndex": 2
+            },
+            {
+              "type": "timer",
+              "format": "ss:SSS",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "color": "#FF6B6B",
+              "position": "center",
+              "offsetY": 400,
+              "zIndex": 2,
+              "start": 3
+            },
+            {
+              "type": "text",
+              "text": "Countdown from 10s",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 550,
+              "zIndex": 2
+            },
+            {
+              "type": "timer",
+              "format": "ss:SSS",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "color": "#FF4444",
+              "countDown": true,
+              "maxDuration": 8,
+              "position": "center",
+              "offsetY": 640,
+              "zIndex": 2,
+              "glow": {
+                "color": "#FF4444",
+                "blur": 15
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

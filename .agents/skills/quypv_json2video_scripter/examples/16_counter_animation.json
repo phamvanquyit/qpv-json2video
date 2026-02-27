@@ -1,0 +1,394 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#0d1117",
+              "#1a1a2e",
+              "#0f3460"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Counter Animation",
+              "fontSize": 48,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -400,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.6
+              }
+            },
+            {
+              "type": "text",
+              "text": "numbers that count up/down",
+              "fontSize": 24,
+              "color": "#888888",
+              "position": "center",
+              "offsetY": -330,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "Price Reveal",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": -200,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 96,
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 2,
+              "counter": {
+                "from": 0,
+                "to": 9999,
+                "duration": 3,
+                "prefix": "$",
+                "easing": "easeOutCubic"
+              },
+              "glow": {
+                "color": "#FFD700",
+                "blur": 12
+              },
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "Percentage",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 50,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "color": "#4ECDC4",
+              "position": "center",
+              "offsetY": 150,
+              "zIndex": 2,
+              "counter": {
+                "from": 0,
+                "to": 100,
+                "duration": 3.5,
+                "suffix": "%",
+                "easing": "easeOutCubic"
+              },
+              "strokeColor": "#000000",
+              "strokeWidth": 3
+            },
+            {
+              "type": "text",
+              "text": "Decimal counter",
+              "fontSize": 28,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 300,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 64,
+              "fontWeight": "bold",
+              "color": "#FF6B6B",
+              "position": "center",
+              "offsetY": 400,
+              "zIndex": 2,
+              "counter": {
+                "from": 0,
+                "to": 4.99,
+                "duration": 2.5,
+                "prefix": "⭐ ",
+                "decimals": 2,
+                "easing": "easeOutBack"
+              }
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#1a0a2e",
+              "#2d1b69"
+            ],
+            "angle": 180
+          },
+          "transition": {
+            "type": "slideUp",
+            "duration": 0.6
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Stats Dashboard",
+              "fontSize": 44,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -400,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "shape",
+              "width": 900,
+              "height": 200,
+              "bgColor": "rgba(255,255,255,0.06)",
+              "borderRadius": 20,
+              "position": "center",
+              "offsetY": -200,
+              "zIndex": 1
+            },
+            {
+              "type": "text",
+              "text": "Users",
+              "fontSize": 24,
+              "color": "#888888",
+              "position": "center",
+              "offsetY": -250,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "color": "#4ECDC4",
+              "position": "center",
+              "offsetY": -170,
+              "zIndex": 2,
+              "counter": {
+                "from": 0,
+                "to": 12500,
+                "duration": 3,
+                "easing": "easeOutCubic"
+              }
+            },
+            {
+              "type": "shape",
+              "width": 900,
+              "height": 200,
+              "bgColor": "rgba(255,255,255,0.06)",
+              "borderRadius": 20,
+              "position": "center",
+              "offsetY": 50,
+              "zIndex": 1
+            },
+            {
+              "type": "text",
+              "text": "Revenue",
+              "fontSize": 24,
+              "color": "#888888",
+              "position": "center",
+              "offsetY": 0,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "position": "center",
+              "offsetY": 80,
+              "zIndex": 2,
+              "counter": {
+                "from": 0,
+                "to": 258000,
+                "duration": 3.5,
+                "prefix": "$",
+                "easing": "easeOutCubic"
+              }
+            },
+            {
+              "type": "shape",
+              "width": 900,
+              "height": 200,
+              "bgColor": "rgba(255,255,255,0.06)",
+              "borderRadius": 20,
+              "position": "center",
+              "offsetY": 300,
+              "zIndex": 1
+            },
+            {
+              "type": "text",
+              "text": "Growth",
+              "fontSize": 24,
+              "color": "#888888",
+              "position": "center",
+              "offsetY": 250,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 72,
+              "fontWeight": "bold",
+              "color": "#00FF88",
+              "position": "center",
+              "offsetY": 330,
+              "zIndex": 2,
+              "counter": {
+                "from": 0,
+                "to": 340,
+                "duration": 3,
+                "suffix": "%",
+                "easing": "easeOutBack"
+              },
+              "glow": {
+                "color": "#00FF88",
+                "blur": 10
+              }
+            }
+          ]
+        },
+        {
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#0a1628",
+              "#162447",
+              "#1f4068"
+            ],
+            "angle": 90
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "Countdown",
+              "fontSize": 44,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "center",
+              "offsetY": -400,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 120,
+              "fontWeight": "bold",
+              "color": "#FF4444",
+              "position": "center",
+              "offsetY": -150,
+              "zIndex": 2,
+              "counter": {
+                "from": 10,
+                "to": 0,
+                "duration": 4,
+                "easing": "linear"
+              },
+              "glow": {
+                "color": "#FF4444",
+                "blur": 20
+              },
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.3
+              }
+            },
+            {
+              "type": "text",
+              "text": "SECONDS LEFT",
+              "fontSize": 28,
+              "fontWeight": "bold",
+              "color": "#FF6B6B",
+              "position": "center",
+              "offsetY": 0,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 48,
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "bgColor": "#FF4444",
+              "bgShape": "pill",
+              "padding": 18,
+              "position": "center",
+              "offsetY": 200,
+              "zIndex": 2,
+              "counter": {
+                "from": 50,
+                "to": 0,
+                "duration": 4,
+                "suffix": " left!",
+                "easing": "linear"
+              }
+            },
+            {
+              "type": "text",
+              "text": "Linear easing for real-time feel",
+              "fontSize": 22,
+              "color": "#666666",
+              "position": "center",
+              "offsetY": 350,
+              "zIndex": 2
+            },
+            {
+              "type": "text",
+              "text": "",
+              "fontSize": 56,
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "bgColor": "rgba(0,0,0,0.5)",
+              "bgShape": "banner",
+              "padding": 20,
+              "position": "center",
+              "offsetY": 500,
+              "zIndex": 2,
+              "counter": {
+                "from": 999,
+                "to": 0,
+                "duration": 4.5,
+                "prefix": "$",
+                "suffix": " saved",
+                "easing": "easeOutCubic"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

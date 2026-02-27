@@ -9,6 +9,7 @@ import { paintText } from './element-painters/text.painter';
 import { paintSvg, clearSvgCache } from './element-painters/svg.painter';
 import { paintVideoFrame, VideoFrameExtractor } from './element-painters/video.painter';
 import { paintWaveform, clearWaveformCache } from './element-painters/waveform.painter';
+import { paintTimer } from './element-painters/timer.painter';
 import { loadGoogleFont } from './google-fonts';
 import {
   computeElementAnimation, computeKeyframeState, computeSceneTransition,
@@ -206,7 +207,7 @@ export class CanvasRenderer {
       for (const scene of scenes) {
         if (!scene.elements) continue;
         for (const el of scene.elements) {
-          if ((el.type === 'text' || el.type === 'caption') && el.fontFamily) {
+          if ((el.type === 'text' || el.type === 'caption' || el.type === 'timer') && el.fontFamily) {
             const name = el.fontFamily.trim();
             if (!CanvasRenderer.SYSTEM_FONTS.has(name.toLowerCase())) {
               fontNames.add(name);
@@ -628,6 +629,10 @@ export class CanvasRenderer {
         await paintWaveform(ctx, element, this.config.width, this.config.height, this.assetLoader, timeInWfElement, wfElDuration);
         break;
       }
+
+      case 'timer':
+        paintTimer(ctx, element, this.config.width, this.config.height, currentTime, sceneDuration, this.fps);
+        break;
     }
   }
 

@@ -1,0 +1,202 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "duration": 6,
+          "bgColor": "#0a0a1a",
+          "elements": [
+            {
+              "type": "text",
+              "text": "CAPTIONS",
+              "fontSize": 52,
+              "fontFamily": "Orbitron",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10
+            },
+            {
+              "type": "caption",
+              "srtContent": "1\n00:00:00,500 --> 00:00:02,500\nThis is standard subtitles\n\n2\n00:00:03,000 --> 00:00:05,500\nNo word highlight enabled",
+              "fontFamily": "Poppins",
+              "fontSize": 42,
+              "color": "#FFFFFF",
+              "strokeColor": "#000000",
+              "strokeWidth": 4,
+              "textAlign": "center",
+              "maxWidth": "85%",
+              "position": "bottom-center",
+              "offsetY": -150,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "duration": 6,
+          "bgGradient": {
+            "colors": [
+              "#0f0c29",
+              "#302b63"
+            ],
+            "angle": 90
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "KARAOKE HIGHLIGHT",
+              "fontSize": 44,
+              "fontFamily": "Orbitron",
+              "color": "#FFD700",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10
+            },
+            {
+              "type": "caption",
+              "srtContent": "1\n00:00:00,500 --> 00:00:02,500\nWord by word highlight\n\n2\n00:00:03,000 --> 00:00:05,500\nKaraoke style animation",
+              "fontFamily": "Poppins",
+              "fontSize": 42,
+              "color": "#FFFFFF",
+              "strokeColor": "#000000",
+              "strokeWidth": 4,
+              "textAlign": "center",
+              "maxWidth": "85%",
+              "wordHighlight": true,
+              "highlightColor": "#FFD700",
+              "highlightStyle": "color",
+              "position": "bottom-center",
+              "offsetY": -150,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "duration": 6,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "HIGHLIGHT: background",
+              "fontSize": 40,
+              "fontFamily": "Orbitron",
+              "color": "#4ECDC4",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10
+            },
+            {
+              "type": "caption",
+              "srtContent": "1\n00:00:00,500 --> 00:00:02,500\nBackground style highlight\n\n2\n00:00:03,000 --> 00:00:05,500\nActive word gets a box",
+              "fontFamily": "Poppins",
+              "fontSize": 42,
+              "color": "#FFFFFF",
+              "strokeColor": "#000000",
+              "strokeWidth": 4,
+              "textAlign": "center",
+              "maxWidth": "85%",
+              "wordHighlight": true,
+              "highlightColor": "#FF6B6B",
+              "highlightBgColor": "rgba(255,107,107,0.3)",
+              "highlightStyle": "background",
+              "position": "bottom-center",
+              "offsetY": -150,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "duration": 6,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "HIGHLIGHT: scale",
+              "fontSize": 40,
+              "fontFamily": "Orbitron",
+              "color": "#FF69B4",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10
+            },
+            {
+              "type": "caption",
+              "srtContent": "1\n00:00:00,500 --> 00:00:02,500\nScale style highlight\n\n2\n00:00:03,000 --> 00:00:05,500\nActive word scales up",
+              "fontFamily": "Poppins",
+              "fontSize": 42,
+              "color": "#FFFFFF",
+              "strokeColor": "#000000",
+              "strokeWidth": 4,
+              "textAlign": "center",
+              "maxWidth": "85%",
+              "wordHighlight": true,
+              "highlightColor": "#FF69B4",
+              "highlightStyle": "scale",
+              "highlightScale": 1.2,
+              "position": "bottom-center",
+              "offsetY": -150,
+              "zIndex": 5
+            }
+          ]
+        },
+        {
+          "duration": 6,
+          "bgGradient": {
+            "colors": [
+              "#1a1a2e",
+              "#0f3460"
+            ],
+            "angle": 135
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "WORD-BY-WORD MODE",
+              "fontSize": 40,
+              "fontFamily": "Orbitron",
+              "color": "#00FF88",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10
+            },
+            {
+              "type": "caption",
+              "srtContent": "1\n00:00:00,500 --> 00:00:02,500\nCapCut style word pop\n\n2\n00:00:03,000 --> 00:00:05,500\nOne word at a time",
+              "fontFamily": "Poppins",
+              "fontSize": 64,
+              "color": "#FFFFFF",
+              "strokeColor": "#000000",
+              "strokeWidth": 4,
+              "textAlign": "center",
+              "displayMode": "word",
+              "highlightColor": "#FFD700",
+              "position": "center",
+              "zIndex": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

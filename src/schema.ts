@@ -376,6 +376,29 @@ export const WaveformElementSchema = ElementBaseSchema.extend({
   gradient: GradientConfigSchema.optional(),
 });
 
+export const TimerFormatSchema = z.enum([
+  'hh:mm:ss:SSS', 'hh:mm:ss', 'mm:ss:SSS', 'mm:ss', 'ss:SSS', 'ss',
+]);
+
+export const TimerElementSchema = ElementBaseSchema.extend({
+  type: z.literal('timer'),
+  format: TimerFormatSchema.optional(),
+  fontFamily: z.string().optional(),
+  fontSize: z.number().positive().optional(),
+  fontWeight: z.union([z.string(), z.number()]).optional(),
+  color: z.string().optional(),
+  bgColor: z.string().optional(),
+  textAlign: z.enum(['left', 'center', 'right']).optional(),
+  strokeColor: z.string().optional(),
+  strokeWidth: z.number().min(0).optional(),
+  padding: z.number().min(0).optional(),
+  glow: GlowConfigSchema.optional(),
+  gradient: GradientConfigSchema.optional(),
+  separatorColor: z.string().optional(),
+  countDown: z.boolean().optional(),
+  maxDuration: z.number().positive().optional(),
+});
+
 export const SceneElementSchema = z.discriminatedUnion('type', [
   TextElementSchema,
   ImageElementSchema,
@@ -384,6 +407,7 @@ export const SceneElementSchema = z.discriminatedUnion('type', [
   CaptionElementSchema,
   SvgElementSchema as any, // refine() changes type, cast for discriminatedUnion
   WaveformElementSchema,
+  TimerElementSchema,
 ]);
 
 // ============================================================

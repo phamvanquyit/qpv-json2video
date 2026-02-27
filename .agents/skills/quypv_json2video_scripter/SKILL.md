@@ -1020,8 +1020,49 @@ await json2videoFile(config, "./output.mp4", {
 
 ## Examples
 
-See the `examples/` directory for complete, production-ready JSON configurations:
+See the `examples/` directory for complete, production-ready JSON configurations demonstrating every feature:
 
-- `examples/product_ad.json` — TikTok-style product advertisement
-- `examples/text_explainer.json` — Text-only explainer video
-- `examples/quote_video.json` — Motivational quote video
+### Basics
+
+| File                                | Description                                                                               |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| `examples/01_basic_text.json`       | Text positioning (9 positions), Google Fonts, stroke, text background                     |
+| `examples/02_animations.json`       | All animation presets: fadeIn, slideIn, zoomIn, bounce, pop, shake, typewriter, fadeInOut |
+| `examples/03_transitions.json`      | All scene transitions: fade, slideLeft/Right/Up/Down, wipeLeft/Right, zoomIn/Out          |
+| `examples/04_shapes.json`           | Shapes: rectangle, circle, ellipse, line, gradient fill                                   |
+| `examples/07_transform_timing.json` | Scale, rotation, element timing (start/duration), opacity, zIndex layering                |
+| `examples/13_multi_track.json`      | Multi-track layout with zIndex layers, track start offset                                 |
+
+### Visual Effects
+
+| File                                    | Description                                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `examples/05_shadow_glow_gradient.json` | Drop shadows, neon glow, linear/radial gradients on text & shapes, scene bgGradient              |
+| `examples/06_keyframes.json`            | Keyframe animation: pop→float→fade, slide+bounce, spring easing, elastic easing                  |
+| `examples/08_filters.json`              | CSS filters: blur, brightness, contrast, saturate, grayscale, sepia, hueRotate, invert, combined |
+| `examples/09_blend_modes.json`          | Blend modes: screen, multiply, overlay, difference, soft-light, filter+blend combo               |
+| `examples/10_vignette_overlay.json`     | Vignette effect, colorOverlay, overlay+blendMode combo                                           |
+
+### Elements & Features
+
+| File                                 | Description                                                                                                |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `examples/11_images.json`            | Image element: cover/contain fit modes, borderRadius, shadow                                               |
+| `examples/12_captions.json`          | Caption/SRT subtitles: standard, karaoke highlight (color/background/scale), word-by-word mode             |
+| `examples/14_rich_text.json`         | Rich text: multi-style segments, varying sizes, emoji, underline, highlight background, per-segment stroke |
+| `examples/15_text_bg_shapes.json`    | Text background shapes: rectangle, pill, banner, speech-bubble                                             |
+| `examples/16_counter_animation.json` | Counter animation: price reveal, percentage, decimal, stats dashboard, countdown                           |
+| `examples/19_svg_rendering.json`     | SVG rendering: inline SVG, fillColor override, icon grid with staggered animation                          |
+| `examples/23_timer.json`             | Timer element: multiple formats (hh:mm:ss:SSS, mm:ss, ss:SSS), countdown, separatorColor                   |
+
+### Advanced Video & Audio
+
+| File                                | Description                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `examples/17_video_processing.json` | Video processing: reverse playback, freeze frame, speed ramping (speedCurve)                        |
+| `examples/18_ken_burns.json`        | Ken Burns effect: zoom out+pan, slow zoom in, diagonal pan                                          |
+| `examples/20_waveform.json`         | Audio waveform visualization: bars, mirror, line, circle styles with gradient                       |
+| `examples/21_chroma_key.json`       | Chroma key (green screen): before/after, tolerance comparison, composite with background            |
+| `examples/22_masks.json`            | Masks & clipping: circle, star, polygon, rounded rect, text mask (TRAVEL, DREAM+Ken Burns), gallery |
+
+> 💡 **IMPORTANT:** Study these examples carefully before generating JSON. They are the ground truth for how the library structures video configurations. Each file is a complete, runnable config.

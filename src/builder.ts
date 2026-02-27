@@ -53,6 +53,8 @@ import type {
   SvgElement,
   TextBackgroundShape,
   TextElement,
+  TimerElement,
+  TimerFormat,
   Track,
   TransitionType,
   VideoCropConfig,
@@ -182,6 +184,25 @@ export type WaveformOptions = ElementOptions & {
   smoothing?: number;
   mirror?: boolean;
   gradient?: GradientConfig;
+};
+
+/** Options riêng cho TimerElement */
+export type TimerOptions = ElementOptions & {
+  format?: TimerFormat;
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string | number;
+  color?: string;
+  bgColor?: string;
+  textAlign?: 'left' | 'center' | 'right';
+  strokeColor?: string;
+  strokeWidth?: number;
+  padding?: number;
+  glow?: GlowConfig;
+  gradient?: GradientConfig;
+  separatorColor?: string;
+  countDown?: boolean;
+  maxDuration?: number;
 };
 
 // ──────────────────────────────────────────────
@@ -396,6 +417,20 @@ export class SceneBuilder {
       audioUrl,
       width: rest.width ?? 800,
       height: rest.height ?? 200,
+      position: 'center',
+      zIndex: this._elements.length + 1,
+      ...rest,
+      animation: normalizeAnimation(animation),
+    };
+    this._elements.push(element);
+    return this;
+  }
+
+  /** Thêm timer element (bộ đếm thời gian) */
+  addTimer(options: TimerOptions = {}): this {
+    const { animation, ...rest } = options;
+    const element: TimerElement = {
+      type: 'timer',
       position: 'center',
       zIndex: this._elements.length + 1,
       ...rest,

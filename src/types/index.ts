@@ -748,7 +748,70 @@ export interface WaveformElement extends ElementBase {
   gradient?: GradientConfig;
 }
 
-export type SceneElement = TextElement | ImageElement | VideoElement | CaptionElement | ShapeElement | SvgElement | WaveformElement;
+/**
+ * Timer display format
+ * - 'hh:mm:ss:SSS': 00:00:00:000 (full)
+ * - 'hh:mm:ss': 00:00:00
+ * - 'mm:ss:SSS': 00:00:000
+ * - 'mm:ss': 00:00
+ * - 'ss:SSS': 00:000
+ * - 'ss': 00
+ */
+export type TimerFormat = 'hh:mm:ss:SSS' | 'hh:mm:ss' | 'mm:ss:SSS' | 'mm:ss' | 'ss:SSS' | 'ss';
+
+/**
+ * Timer element — hiển thị bộ đếm thời gian chạy
+ * Timer luôn đếm từ 0, tính từ khi element xuất hiện.
+ * Dùng `start` và `duration` (từ ElementBase) để config khi nào xuất hiện/biến mất.
+ *
+ * @example
+ * ```json
+ * {
+ *   "type": "timer",
+ *   "format": "hh:mm:ss:SSS",
+ *   "fontSize": 64,
+ *   "fontFamily": "Orbitron",
+ *   "color": "#00FF88",
+ *   "separatorColor": "#FFFFFF50",
+ *   "position": "top-right"
+ * }
+ * ```
+ */
+export interface TimerElement extends ElementBase {
+  type: 'timer';
+  /** Format hiển thị, mặc định 'hh:mm:ss:SSS' */
+  format?: TimerFormat;
+  /** Font family, mặc định 'monospace' */
+  fontFamily?: string;
+  /** Font size (px), mặc định 48 */
+  fontSize?: number;
+  /** Font weight, mặc định 700 (bold) */
+  fontWeight?: string | number;
+  /** Màu text, mặc định '#FFFFFF' */
+  color?: string;
+  /** Màu nền, mặc định transparent */
+  bgColor?: string;
+  /** Text align, mặc định 'center' */
+  textAlign?: 'left' | 'center' | 'right';
+  /** Stroke color (outline), mặc định '#000000' */
+  strokeColor?: string;
+  /** Stroke width (px), mặc định 0 */
+  strokeWidth?: number;
+  /** Padding (px), mặc định 10 */
+  padding?: number;
+  /** Glow effect (neon) */
+  glow?: GlowConfig;
+  /** Gradient fill cho timer text */
+  gradient?: GradientConfig;
+  /** Màu dấu phân cách (:), mặc định = color */
+  separatorColor?: string;
+  /** Đếm ngược (từ maxDuration xuống 0), mặc định false */
+  countDown?: boolean;
+  /** Thời lượng tối đa cho countdown (giây). Mặc định = element duration hoặc scene duration */
+  maxDuration?: number;
+}
+
+export type SceneElement = TextElement | ImageElement | VideoElement | CaptionElement | ShapeElement | SvgElement | WaveformElement | TimerElement;
 
 /**
  * SVG element — render SVG trực tiếp lên canvas

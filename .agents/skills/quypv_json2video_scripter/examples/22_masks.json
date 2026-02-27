@@ -1,0 +1,497 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "tracks": [
+    {
+      "type": "video",
+      "zIndex": 0,
+      "scenes": [
+        {
+          "title": "Scene 1: Circle Mask on Image",
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#0f0c29",
+              "#302b63",
+              "#24243e"
+            ],
+            "angle": 135
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "CIRCLE MASK",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 600,
+              "height": 600,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 1,
+              "animation": {
+                "type": "zoomIn",
+                "fadeInDuration": 0.8
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "circle",
+                "radius": 250
+              }
+            },
+            {
+              "type": "text",
+              "text": "Image clipped to circle",
+              "fontSize": 26,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 250,
+              "zIndex": 2
+            }
+          ]
+        },
+        {
+          "title": "Scene 2: Star Mask on Image",
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#1a1a2e",
+              "#16213e",
+              "#0f3460"
+            ],
+            "angle": 180
+          },
+          "transition": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "STAR MASK",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFD700",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 700,
+              "height": 700,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 1,
+              "animation": {
+                "type": "pop",
+                "fadeInDuration": 0.6
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "star",
+                "radius": 300,
+                "points": 5,
+                "innerRadius": 0.4
+              }
+            },
+            {
+              "type": "text",
+              "text": "5-point star mask",
+              "fontSize": 26,
+              "color": "#FFD700",
+              "position": "center",
+              "offsetY": 280,
+              "zIndex": 2
+            }
+          ]
+        },
+        {
+          "title": "Scene 3: Polygon (Hexagon) Mask",
+          "duration": 4,
+          "bgGradient": {
+            "colors": [
+              "#0d1117",
+              "#1a1a2e"
+            ],
+            "angle": 90
+          },
+          "transition": {
+            "type": "slideLeft",
+            "duration": 0.6
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "HEXAGON MASK",
+              "fontSize": 44,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#4ECDC4",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/2/800/800.jpg",
+              "width": 650,
+              "height": 650,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 1,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "polygon",
+                "radius": 280,
+                "numSides": 6
+              }
+            },
+            {
+              "type": "text",
+              "text": "6-sided polygon mask",
+              "fontSize": 26,
+              "color": "#4ECDC4",
+              "position": "center",
+              "offsetY": 280,
+              "zIndex": 2
+            }
+          ]
+        },
+        {
+          "title": "Scene 4: Rounded Rect Mask",
+          "duration": 4,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "wipeRight",
+            "duration": 0.6
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "ROUNDED RECT",
+              "fontSize": 44,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FF6B6B",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 800,
+              "height": 500,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -100,
+              "zIndex": 1,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "rect",
+                "width": 700,
+                "height": 400,
+                "borderRadius": 40
+              }
+            },
+            {
+              "type": "text",
+              "text": "rect mask with borderRadius: 40",
+              "fontSize": 26,
+              "color": "#FF6B6B",
+              "position": "center",
+              "offsetY": 250,
+              "zIndex": 2
+            }
+          ]
+        },
+        {
+          "title": "Scene 5: Text Mask — TRAVEL",
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#0f0c29",
+              "#302b63",
+              "#24243e"
+            ],
+            "angle": 135
+          },
+          "transition": {
+            "type": "zoomIn",
+            "duration": 0.8
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "TEXT MASK",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 120,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 1080,
+              "height": 800,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -50,
+              "zIndex": 1,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 1
+              },
+              "mask": {
+                "type": "text",
+                "text": "TRAVEL",
+                "fontSize": 350,
+                "fontWeight": "bold",
+                "fontFamily": "Oswald",
+                "strokeWidth": 8
+              }
+            },
+            {
+              "type": "text",
+              "text": "Image plays inside text ✨",
+              "fontSize": 28,
+              "color": "#FFD700",
+              "position": "center",
+              "offsetY": 350,
+              "zIndex": 2,
+              "start": 1,
+              "animation": {
+                "type": "slideInBottom",
+                "fadeInDuration": 0.6
+              }
+            }
+          ]
+        },
+        {
+          "title": "Scene 6: Text Mask — DREAM + Ken Burns",
+          "duration": 5,
+          "bgColor": "#0a0a1a",
+          "transition": {
+            "type": "fade",
+            "duration": 0.8
+          },
+          "elements": [
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/200/1080/1080.jpg",
+              "width": 1080,
+              "height": 900,
+              "fit": "cover",
+              "position": "center",
+              "offsetY": -50,
+              "zIndex": 1,
+              "kenBurns": {
+                "startZoom": 1.3,
+                "endZoom": 1.0,
+                "startX": 30,
+                "endX": 70,
+                "easing": "easeInOut"
+              },
+              "mask": {
+                "type": "text",
+                "text": "DREAM",
+                "fontSize": 380,
+                "fontWeight": "bold",
+                "fontFamily": "Bebas Neue",
+                "strokeWidth": 10
+              }
+            },
+            {
+              "type": "text",
+              "text": "Ken Burns effect inside text mask",
+              "fontSize": 26,
+              "color": "#AAAAAA",
+              "position": "center",
+              "offsetY": 380,
+              "zIndex": 2,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.8
+              }
+            }
+          ]
+        },
+        {
+          "title": "Scene 7: Multiple masks — Shape gallery",
+          "duration": 5,
+          "bgGradient": {
+            "colors": [
+              "#1a1a2e",
+              "#0f3460"
+            ],
+            "angle": 135
+          },
+          "transition": {
+            "type": "slideUp",
+            "duration": 0.6
+          },
+          "elements": [
+            {
+              "type": "text",
+              "text": "MASK GALLERY",
+              "fontSize": 48,
+              "fontFamily": "Orbitron",
+              "fontWeight": "bold",
+              "color": "#FFFFFF",
+              "position": "top-center",
+              "offsetY": 100,
+              "zIndex": 10,
+              "animation": {
+                "type": "fadeIn",
+                "fadeInDuration": 0.5
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/96/800/800.jpg",
+              "width": 350,
+              "height": 350,
+              "fit": "cover",
+              "position": "center",
+              "offsetX": -200,
+              "offsetY": -200,
+              "zIndex": 1,
+              "start": 0.2,
+              "animation": {
+                "type": "zoomIn",
+                "fadeInDuration": 0.6
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "circle",
+                "radius": 140
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/2/800/800.jpg",
+              "width": 350,
+              "height": 350,
+              "fit": "cover",
+              "position": "center",
+              "offsetX": 200,
+              "offsetY": -200,
+              "zIndex": 1,
+              "start": 0.5,
+              "animation": {
+                "type": "zoomIn",
+                "fadeInDuration": 0.6
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "star",
+                "radius": 150,
+                "points": 5,
+                "innerRadius": 0.45
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/180/1080/1920.jpg",
+              "width": 350,
+              "height": 350,
+              "fit": "cover",
+              "position": "center",
+              "offsetX": -200,
+              "offsetY": 200,
+              "zIndex": 1,
+              "start": 0.8,
+              "animation": {
+                "type": "zoomIn",
+                "fadeInDuration": 0.6
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "polygon",
+                "radius": 150,
+                "numSides": 6
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://picsum.photos/id/200/1080/1080.jpg",
+              "width": 350,
+              "height": 350,
+              "fit": "cover",
+              "position": "center",
+              "offsetX": 200,
+              "offsetY": 200,
+              "zIndex": 1,
+              "start": 1.1,
+              "animation": {
+                "type": "zoomIn",
+                "fadeInDuration": 0.6
+              },
+              "mask": {
+                "type": "shape",
+                "shape": "polygon",
+                "radius": 150,
+                "numSides": 3
+              }
+            },
+            {
+              "type": "text",
+              "text": "Circle • Star • Hexagon • Triangle",
+              "fontSize": 24,
+              "color": "#AAAAAA",
+              "position": "bottom-center",
+              "offsetY": -150,
+              "zIndex": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
