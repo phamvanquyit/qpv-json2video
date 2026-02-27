@@ -21,7 +21,16 @@
     "ffmpeg",
     "render"
   ],
+  "author": "phamvanquyit",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phamvanquyit/qpv-json2video.git"
+  },
+  "homepage": "https://github.com/phamvanquyit/qpv-json2video#readme",
+  "bugs": {
+    "url": "https://github.com/phamvanquyit/qpv-json2video/issues"
+  },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.94",
     "axios": "^1.7.0",
