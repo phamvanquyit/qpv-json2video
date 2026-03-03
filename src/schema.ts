@@ -344,7 +344,9 @@ export const CaptionElementSchema = ElementBaseSchema.extend({
   highlightScale: z.number().positive().optional(),
 });
 
-export const SvgElementSchema = ElementBaseSchema.extend({
+// SvgElementBaseSchema: dùng trong discriminatedUnion (không có .refine())
+// Zod v3 không hỗ trợ .refine() schema trong discriminatedUnion
+const SvgElementBaseSchema = ElementBaseSchema.extend({
   type: z.literal('svg'),
   svgContent: z.string().optional(),
   url: z.string().min(1).optional(),
@@ -352,7 +354,10 @@ export const SvgElementSchema = ElementBaseSchema.extend({
   height: z.coerce.number().positive(),
   fit: z.enum(['cover', 'contain', 'fill']).optional(),
   fillColor: z.string().optional(),
-}).refine(
+});
+
+// SvgElementSchema: có .refine() validation đầy đủ, export để dùng bên ngoài
+export const SvgElementSchema = SvgElementBaseSchema.refine(
   (data) => data.svgContent || data.url,
   { message: 'SVG element phải có svgContent hoặc url' }
 );
@@ -405,7 +410,7 @@ export const SceneElementSchema = z.discriminatedUnion('type', [
   VideoElementSchema,
   ShapeElementSchema,
   CaptionElementSchema,
-  SvgElementSchema as any, // refine() changes type, cast for discriminatedUnion
+  SvgElementBaseSchema, // dùng base (không refine) để compatible Zod v3
   WaveformElementSchema,
   TimerElementSchema,
 ]);
